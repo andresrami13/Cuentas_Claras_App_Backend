@@ -68,7 +68,7 @@ public class RoleServiceImpl implements RoleService {
             log.info("Registrando rol");
             role = roleRepository.save(role);
         } catch (Exception e) {
-            log.error("Error al intentar registrar el rol: ".concat(e.getMessage()));
+            log.error("Error al intentar registrar el rol: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar registrar role");
         }
 
@@ -131,7 +131,7 @@ public class RoleServiceImpl implements RoleService {
             log.error("Ha ocurrido un error de negocio al actualizar el rol: {}", e.getMessage());
             throw new BusinessException("Error de negocio encontrado");
         } catch (Exception e) {
-            log.error("Error al intentar actualizar el rol: ".concat(e.getMessage()));
+            log.error("Error al intentar actualizar el rol: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar actualizar rol");
         }
     }
@@ -155,7 +155,7 @@ public class RoleServiceImpl implements RoleService {
             log.info("Eliminando rol");
             roleRepository.delete(existingRole);
         } catch (Exception e) {
-            log.error("Error al intentar eliminar el rol: ".concat(e.getMessage()));
+            log.error("Error al intentar eliminar el rol: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar eliminar el rol");
         }
     }
@@ -167,7 +167,7 @@ public class RoleServiceImpl implements RoleService {
             log.info("obteniendo lista de roles");
             return roleRepository.findAll();
         } catch (Exception e) {
-            log.error("Error al intentar eliminar el rol: ".concat(e.getMessage()));
+            log.error("Error al intentar eliminar el rol: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar consultar lista de roles");
         }
     }
@@ -201,7 +201,7 @@ public class RoleServiceImpl implements RoleService {
             log.info("Obteniendo permisos asignados al rol con código: {}", roleCode);
             return permissionRepository.findPermissionsByRoleCode(roleCode);
         } catch (Exception e) {
-            log.error("Error al intentar consultar permisos asignados al rol: ".concat(e.getMessage()));
+            log.error("Error al intentar consultar permisos asignados al rol: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar consultar permisos asignados al rol");
         }
     }

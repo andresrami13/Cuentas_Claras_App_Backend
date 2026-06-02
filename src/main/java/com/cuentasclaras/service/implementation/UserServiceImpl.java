@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Error al intentar registrar usuario", e);
+            log.error("Error al intentar registrar usuario: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar registrar usuario");
         }
 
@@ -94,7 +94,7 @@ public class UserServiceImpl implements UserService {
             log.info("Actualizando usuario");
             return userRepository.save(existingUser);
         } catch (Exception e) {
-            log.error("Error al intentar actualizar usuario: ".concat(e.getMessage()));
+            log.error("Error al intentar actualizar usuario: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar actualizar usuario");
         }
 
@@ -114,7 +114,7 @@ public class UserServiceImpl implements UserService {
             log.info("Eliminando usuario".concat(documentNumber));
             userRepository.delete(existingUser);
         } catch (Exception e) {
-            log.error("Error al intentar eliminar usuario: ".concat(e.getMessage()));
+            log.error("Error al intentar eliminar usuario: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar eliminar usuario");
         }
     }
@@ -126,7 +126,7 @@ public class UserServiceImpl implements UserService {
             log.info("Obteniendo lista de usuarios");
             return userRepository.findAll();
         } catch (Exception e) {
-            log.error("Error al intentar consultar lista de usuarios: ".concat(e.getMessage()));
+            log.error("Error al intentar consultar lista de usuarios: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar consultar lista de usuarios");
         }
     }
@@ -169,7 +169,7 @@ public class UserServiceImpl implements UserService {
             log.info("Resultado de validación de credenciales: {}", match ? "exitoso" : "fallido");
             return LoginResponse.builder().match(match).detail(match ? "Login correcto" : "Credenciales incorrectas").build();
         } catch (Exception e) {
-            log.error("Error al intentar validar login de usuario: ".concat(e.getMessage()));
+            log.error("Error al intentar validar login de usuario: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar validar login de usuario");
         }
     }

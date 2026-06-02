@@ -40,7 +40,7 @@ public class PermissionServiceImpl implements PermissionService {
             log.info("Registrando permiso");
             permission = permissionRepository.save(permission);
         } catch (Exception e) {
-            log.error("Error al intentar registrar permiso: ".concat(e.getMessage()));
+            log.error("Error al intentar registrar permiso: ", e.getMessage(), e);
             throw new SystemException("Error al intentar registrar permiso");
         }
 
@@ -66,7 +66,7 @@ public class PermissionServiceImpl implements PermissionService {
             log.info("Actualizando permiso");
             return permissionRepository.save(existingPermission);
         } catch (Exception e) {
-            log.error("Error al intentar actualizar el permiso: ".concat(e.getMessage()));
+            log.error("Error al intentar actualizar el permiso: ", e.getMessage(), e);
             throw new SystemException("Error al intentar actualizar permiso");
         }
     }
@@ -89,7 +89,7 @@ public class PermissionServiceImpl implements PermissionService {
         try {
             permissionRepository.delete(existingPermission);
         } catch (Exception e) {
-            log.error("Error al intentar borrar el permiso: ".concat(e.getMessage()));
+            log.error("Error al intentar borrar el permiso: ", e.getMessage(), e);
             throw new SystemException("Error al intentar eliminar permiso");
         }
 
