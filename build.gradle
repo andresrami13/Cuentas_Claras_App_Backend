@@ -5,7 +5,7 @@ plugins {
     id 'jacoco'
 }
 
-group = 'com.udistrital'
+group = 'com.cuentasclaras'
 version = '0.0.1-SNAPSHOT'
 description = 'Aplicación para gestión financiera personal'
 
