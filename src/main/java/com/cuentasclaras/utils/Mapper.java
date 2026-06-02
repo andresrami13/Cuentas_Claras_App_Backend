@@ -103,7 +103,9 @@ public class Mapper {
     }
 
     public User toUser(UserDto userDto) {
-        Role role = Role.builder().roleCode(userDto.getRole().getRoleCode()).build();
+        Role role = (userDto.getRole() != null)
+                ? Role.builder().roleCode(userDto.getRole().getRoleCode()).build()
+                : null;
 
         return User.builder()
                 .documentType(userDto.getDocumentType())

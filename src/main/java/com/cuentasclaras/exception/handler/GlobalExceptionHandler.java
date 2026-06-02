@@ -3,11 +3,13 @@ package com.cuentasclaras.exception.handler;
 import com.cuentasclaras.exception.BusinessException;
 import com.cuentasclaras.exception.SystemException;
 import com.cuentasclaras.model.dto.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
@@ -32,6 +34,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
+        log.error("Error interno no controlado: {}", ex.getMessage(), ex);
         return ResponseEntity.internalServerError()
                 .body(ApiResponse.of(
                         500,

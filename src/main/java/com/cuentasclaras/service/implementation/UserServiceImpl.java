@@ -44,15 +44,15 @@ public class UserServiceImpl implements UserService {
         if (user.getPassword() == null)
             throw new BusinessException("La contraseña del usuario es obligatoria");
 
-        String roleCode = user.getRole().getRoleCode();
-        Role role = roleRepository.findById(roleCode)
-            .orElseThrow(() -> new BusinessException("No existe el rol con código: " + roleCode));
-        user.setRole(role);
-
-        if (userRepository.existsByDocumentNumber(user.getDocumentNumber()))
-            throw new BusinessException("Ya existe un usuario con el número de documento: " + user.getDocumentNumber());
-
         try {
+            String roleCode = user.getRole().getRoleCode();
+            Role role = roleRepository.findById(roleCode)
+                .orElseThrow(() -> new BusinessException("No existe el rol con código: " + roleCode));
+            user.setRole(role);
+
+            if (userRepository.existsByDocumentNumber(user.getDocumentNumber()))
+                throw new BusinessException("Ya existe un usuario con el número de documento: " + user.getDocumentNumber());
+
             user.setCreatedAt(new Date());
             user.setPassword(encryption.encrypt(user.getPassword()));
             log.info("Registrando usuario");
