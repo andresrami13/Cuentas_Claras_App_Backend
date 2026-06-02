@@ -18,7 +18,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/debts")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173","https://yellow-hill-0c3a76b0f.7.azurestaticapps.net"})
 @Tag(name = "Debts", description = "Servicios para registrar, consultar y administrar deudas de usuarios")
 public class DebtController {
 

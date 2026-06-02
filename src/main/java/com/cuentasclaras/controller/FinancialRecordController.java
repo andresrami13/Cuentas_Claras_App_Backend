@@ -18,7 +18,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/financial-records")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173","https://yellow-hill-0c3a76b0f.7.azurestaticapps.net"})
 @Tag(name = "Financial Records", description = "Servicios para registrar ingresos, egresos y movimientos recurrentes como salarios")
 public class FinancialRecordController {
 

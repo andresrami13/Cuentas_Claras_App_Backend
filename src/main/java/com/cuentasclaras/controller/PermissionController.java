@@ -14,7 +14,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/permissions")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173", "https://yellow-hill-0c3a76b0f.7.azurestaticapps.net"})
 public class PermissionController {
 
     private final PermissionService permissionService;

@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/ai-coach")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173","https://yellow-hill-0c3a76b0f.7.azurestaticapps.net"})
 @Tag(name = "AI Coach", description = "Servicios para generar y consultar recomendaciones financieras con IA")
 public class AiCoachController {
 
