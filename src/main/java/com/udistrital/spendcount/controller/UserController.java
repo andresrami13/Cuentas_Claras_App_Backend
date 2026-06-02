@@ -1,0 +1,153 @@
+package com.udistrital.spendcount.controller;
+
+import com.udistrital.spendcount.model.dto.ApiResponse;
+import com.udistrital.spendcount.model.dto.LoginDto;
+import com.udistrital.spendcount.model.dto.LoginResponse;
+import com.udistrital.spendcount.model.dto.UserDto;
+import com.udistrital.spendcount.service.UserService;
+import com.udistrital.spendcount.utils.Mapper;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST controller that exposes CRUD endpoints for managing users.
+ *
+ * <p>Base path: {@code /users}</p>
+ * <p>Cross-origin requests are allowed from {@code http://localhost:5173}.</p>
+ *
+ */
+@RestController
+@RequestMapping("/users")
+@RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:5173", "https://yellow-hill-0c3a76b0f.7.azurestaticapps.net"})
+public class UserController {
+    /** Service layer that handles the business logic for users. */
+    private final UserService userService;
+
+    /** Utility component for mapping between entities and DTOs. */
+    private final Mapper mapper;
+
+    /**
+     * Creates a new user.
+     *
+     * @param userDto the data transfer object containing the details of the user to create
+     * @return a ResponseEntity with HTTP 201 (Created) and the created UserDto
+     *         wrapped in an ApiResponse.
+     */
+    @PostMapping
+    public ResponseEntity<ApiResponse<UserDto>> createUser(@RequestBody UserDto userDto) {
+
+        UserDto response = mapper.toUserDto(userService.createUser(
+                mapper.toUser(userDto),
+                userDto.getLicense(),
+                userDto.getSpecialityCode(),
+                userDto.getBloodType()
+        ));
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.of(
+                        HttpStatus.CREATED.value(),
+                        "Usuario creado exitosamente",
+                        response
+                ));
+    }
+
+    /**
+     * Updates an existing user identified by their document number.
+     *
+     * @param documentNumber the document number of the user to update
+     * @param userDto        the data transfer object containing the updated user details
+     * @return a ResponseEntity with HTTP 200 (OK) and the updated UserDto.
+     *         wrapped in an  ApiResponse
+     */
+    @PutMapping("/{documentNumber}")
+    public ResponseEntity<ApiResponse<UserDto>> updateUser(@PathVariable String documentNumber, @RequestBody UserDto userDto) {
+        UserDto response = mapper.toUserDto(userService.updateUser(documentNumber, mapper.toUser(userDto)));
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        "Usuario actualizado exitosamente",
+                        response
+                ));
+    }
+
+    /**
+     * Deletes a user identified by their document number.
+     *
+     * @param documentNumber the document number of the user to delete
+     * @return a ResponseEntity with HTTP 200 (OK) and a success message wrapped in an ApiResponse.
+     */
+    @DeleteMapping("/{documentNumber}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable String documentNumber) {
+        userService.deleteUser(documentNumber);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        "Usuario eliminado exitosamente",
+                        null
+                ));
+    }
+
+    /**
+     * Retrieves all users registered in the system.
+     *
+     * @return a ResponseEntity with HTTP 200 (OK) and a list of UserDto
+     *         wrapped in an ApiResponse
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<UserDto>>> getAllUsers() {
+        List<UserDto> users = mapper.toUsersDto(userService.getAllUsers());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        "Lista de usuarios obtenida exitosamente",
+                        users
+                ));
+    }
+
+    /**
+     * Retrieves a user by their document number.
+     *
+     * @param documentNumber the document number of the user to retrieve
+     * @return a ResponseEntity with HTTP 200 (OK) and the UserDto wrapped in an ApiResponse.
+     */
+    @GetMapping("/{documentNumber}")
+    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable String documentNumber) {
+        UserDto userDto = mapper.toUserDto(userService.findByDocumentNumber(documentNumber));
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        "Usuario obtenido exitosamente",
+                        userDto
+                ));
+    }
+
+    /**
+     * Validates user credentials and returns the result of the authentication attempt.
+     *
+     * @param loginDto the data transfer object containing the user's credentials
+     * @return a ResponseEntity with HTTP 200 (OK) and a LoginResponse
+     *         indicating whether the credentials matched, wrapped in an ApiResponse.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginDto loginDto) {
+        LoginResponse loginResponse = userService.login(loginDto);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        "Login procesado correctamente",
+                        loginResponse
+                ));
+    }
+
+}
