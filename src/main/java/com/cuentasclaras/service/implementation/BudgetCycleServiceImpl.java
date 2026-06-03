@@ -1,0 +1,194 @@
+package com.cuentasclaras.service.implementation;
+
+import com.cuentasclaras.exception.BusinessException;
+import com.cuentasclaras.exception.SystemException;
+import com.cuentasclaras.model.entity.BudgetCategory;
+import com.cuentasclaras.model.entity.BudgetCycle;
+import com.cuentasclaras.model.entity.User;
+import com.cuentasclaras.model.enums.BudgetCycleStatus;
+import com.cuentasclaras.repository.BudgetCategoryRepository;
+import com.cuentasclaras.repository.BudgetCycleRepository;
+import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.service.BudgetCycleService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+@Slf4j
+public class BudgetCycleServiceImpl implements BudgetCycleService {
+
+    private final BudgetCycleRepository budgetCycleRepository;
+    private final BudgetCategoryRepository budgetCategoryRepository;
+    private final UserRepository userRepository;
+
+    @Override
+    public BudgetCycle createBudgetCycle(BudgetCycle budgetCycle, String userDocumentNumber) {
+        log.info("Inicio de validaciones para crear ciclo de presupuesto");
+
+        if (userDocumentNumber == null || userDocumentNumber.isBlank())
+            throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        if (budgetCycle.getStartDate() == null)
+            throw new BusinessException("La fecha de inicio del ciclo es obligatoria");
+
+        if (budgetCycle.getEndDate() == null)
+            throw new BusinessException("La fecha de fin del ciclo es obligatoria");
+
+        if (budgetCycle.getStartDate().isAfter(budgetCycle.getEndDate()))
+            throw new BusinessException("La fecha de inicio no puede ser posterior a la fecha de fin");
+
+        if (budgetCycle.getPaymentDay() == null || budgetCycle.getPaymentDay() < 1 || budgetCycle.getPaymentDay() > 31)
+            throw new BusinessException("El día de pago debe estar entre 1 y 31");
+
+        try {
+            User user = userRepository.findById(userDocumentNumber)
+                    .orElseThrow(() -> new BusinessException("No existe el usuario con número de documento: " + userDocumentNumber));
+
+            if (budgetCycleRepository.existsByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE))
+                throw new BusinessException("El usuario ya tiene un ciclo de presupuesto activo");
+
+            budgetCycle.setUser(user);
+            budgetCycle.setStatus(BudgetCycleStatus.ACTIVE);
+            budgetCycle.setCreatedAt(new Date());
+
+            log.info("Creando ciclo de presupuesto para el usuario: {}", userDocumentNumber);
+            return budgetCycleRepository.saveAndFlush(budgetCycle);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar crear ciclo de presupuesto: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar crear ciclo de presupuesto");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BudgetCycle getActiveCycle(String userDocumentNumber) {
+        log.info("Consultando ciclo activo del usuario: {}", userDocumentNumber);
+
+        if (userDocumentNumber == null || userDocumentNumber.isBlank())
+            throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        try {
+            return budgetCycleRepository.findByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE)
+                    .orElseThrow(() -> new BusinessException("No existe ciclo de presupuesto activo para el usuario: " + userDocumentNumber));
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar consultar ciclo activo: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar consultar ciclo activo");
+        }
+    }
+
+    @Override
+    public BudgetCategory addCategory(Long cycleId, BudgetCategory category) {
+        log.info("Agregando categoría al ciclo: {}", cycleId);
+
+        if (cycleId == null)
+            throw new BusinessException("El identificador del ciclo es obligatorio");
+
+        if (category.getCategoryName() == null || category.getCategoryName().isBlank())
+            throw new BusinessException("El nombre de la categoría es obligatorio");
+
+        if (category.getAssignedAmount() == null || category.getAssignedAmount().compareTo(BigDecimal.ZERO) <= 0)
+            throw new BusinessException("El monto asignado debe ser mayor a cero");
+
+        try {
+            BudgetCycle cycle = budgetCycleRepository.findById(cycleId)
+                    .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            if (!BudgetCycleStatus.ACTIVE.equals(cycle.getStatus()))
+                throw new BusinessException("Solo se pueden agregar categorías a un ciclo activo");
+
+            category.setCycle(cycle);
+            if (category.getSpentAmount() == null)
+                category.setSpentAmount(BigDecimal.ZERO);
+            category.setCreatedAt(new Date());
+
+            log.info("Registrando categoría '{}' en el ciclo: {}", category.getCategoryName(), cycleId);
+            return budgetCategoryRepository.saveAndFlush(category);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar agregar categoría al ciclo: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar agregar categoría al ciclo");
+        }
+    }
+
+    @Override
+    public BudgetCategory updateCategory(Long cycleId, Long categoryId, BudgetCategory category) {
+        log.info("Actualizando categoría {} del ciclo: {}", categoryId, cycleId);
+
+        if (cycleId == null)
+            throw new BusinessException("El identificador del ciclo es obligatorio");
+
+        if (categoryId == null)
+            throw new BusinessException("El identificador de la categoría es obligatorio");
+
+        if (category.getAssignedAmount() != null && category.getAssignedAmount().compareTo(BigDecimal.ZERO) <= 0)
+            throw new BusinessException("El monto asignado debe ser mayor a cero");
+
+        try {
+            BudgetCycle cycle = budgetCycleRepository.findById(cycleId)
+                    .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            if (!BudgetCycleStatus.ACTIVE.equals(cycle.getStatus()))
+                throw new BusinessException("Solo se pueden modificar categorías de un ciclo activo");
+
+            BudgetCategory existing = budgetCategoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new BusinessException("No existe la categoría con id: " + categoryId));
+
+            if (!existing.getCycle().getId().equals(cycleId))
+                throw new BusinessException("La categoría no pertenece al ciclo indicado");
+
+            if (category.getCategoryName() != null && !category.getCategoryName().isBlank())
+                existing.setCategoryName(category.getCategoryName());
+
+            if (category.getAssignedAmount() != null)
+                existing.setAssignedAmount(category.getAssignedAmount());
+
+            if (category.getSpentAmount() != null)
+                existing.setSpentAmount(category.getSpentAmount());
+
+            existing.setUpdatedAt(new Date());
+
+            log.info("Actualizando categoría id: {} del ciclo: {}", categoryId, cycleId);
+            return budgetCategoryRepository.saveAndFlush(existing);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar actualizar categoría: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar actualizar categoría");
+        }
+    }
+
+    @Override
+    public void deductFromCategory(String userDocumentNumber, String categoryName, BigDecimal amount) {
+        try {
+            budgetCycleRepository.findByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE)
+                    .ifPresent(cycle ->
+                            budgetCategoryRepository
+                                    .findByCycle_IdAndCategoryNameIgnoreCase(cycle.getId(), categoryName)
+                                    .ifPresent(cat -> {
+                                        cat.setSpentAmount(cat.getSpentAmount().add(amount));
+                                        cat.setUpdatedAt(new Date());
+                                        budgetCategoryRepository.save(cat);
+                                        log.info("Descontado {} de la categoría '{}' del ciclo: {}", amount, categoryName, cycle.getId());
+                                    })
+                    );
+        } catch (Exception e) {
+            log.warn("No se pudo descontar de la categoría de presupuesto '{}': {}", categoryName, e.getMessage());
+        }
+    }
+}

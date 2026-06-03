@@ -5,6 +5,7 @@ import com.cuentasclaras.model.dto.*;
 import com.cuentasclaras.model.entity.*;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Component
@@ -250,6 +251,71 @@ public class Mapper {
 
     public List<AiCoachRequestDto> toAiCoachRequestsDto(List<AiCoachRequest> aiCoachRequests) {
         return aiCoachRequests.stream().map(this::toAiCoachRequestDto).toList();
+    }
+
+    //Budget Cycle Adapters
+    public BudgetCycleDto toBudgetCycleDto(BudgetCycle budgetCycle) {
+        List<BudgetCategoryDto> categoriesDto = budgetCycle.getCategories() != null
+                ? budgetCycle.getCategories().stream().map(this::toBudgetCategoryDto).toList()
+                : List.of();
+
+        return BudgetCycleDto.builder()
+                .id(budgetCycle.getId())
+                .userDocumentNumber(budgetCycle.getUser().getDocumentNumber())
+                .startDate(budgetCycle.getStartDate())
+                .endDate(budgetCycle.getEndDate())
+                .paymentDay(budgetCycle.getPaymentDay())
+                .status(budgetCycle.getStatus())
+                .categories(categoriesDto)
+                .build();
+    }
+
+    public BudgetCycle toBudgetCycle(BudgetCycleDto dto) {
+        return BudgetCycle.builder()
+                .startDate(dto.getStartDate())
+                .endDate(dto.getEndDate())
+                .paymentDay(dto.getPaymentDay())
+                .build();
+    }
+
+    public BudgetCategoryDto toBudgetCategoryDto(BudgetCategory category) {
+        BigDecimal available = category.getAssignedAmount() != null && category.getSpentAmount() != null
+                ? category.getAssignedAmount().subtract(category.getSpentAmount())
+                : BigDecimal.ZERO;
+
+        return BudgetCategoryDto.builder()
+                .id(category.getId())
+                .cycleId(category.getCycle() != null ? category.getCycle().getId() : null)
+                .categoryName(category.getCategoryName())
+                .assignedAmount(category.getAssignedAmount())
+                .spentAmount(category.getSpentAmount())
+                .availableAmount(available)
+                .build();
+    }
+
+    public BudgetCategory toBudgetCategory(BudgetCategoryDto dto) {
+        return BudgetCategory.builder()
+                .categoryName(dto.getCategoryName())
+                .assignedAmount(dto.getAssignedAmount())
+                .spentAmount(dto.getSpentAmount())
+                .build();
+    }
+
+    //User Budget Config Adapters
+    public UserBudgetConfigDto toUserBudgetConfigDto(UserBudgetConfig config) {
+        return UserBudgetConfigDto.builder()
+                .id(config.getId())
+                .userDocumentNumber(config.getUser().getDocumentNumber())
+                .paymentDay(config.getPaymentDay())
+                .nextPaymentDate(config.getNextPaymentDate())
+                .build();
+    }
+
+    public UserBudgetConfig toUserBudgetConfig(UserBudgetConfigDto dto) {
+        return UserBudgetConfig.builder()
+                .paymentDay(dto.getPaymentDay())
+                .nextPaymentDate(dto.getNextPaymentDate())
+                .build();
     }
 
     public AiCoachRequest toAiCoachRequest(AiCoachRequestDto aiCoachRequestDto) {

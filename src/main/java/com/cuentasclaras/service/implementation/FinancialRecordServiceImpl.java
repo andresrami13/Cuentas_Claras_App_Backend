@@ -7,6 +7,7 @@ import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.enums.FinancialRecordType;
 import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.service.BudgetCycleService;
 import com.cuentasclaras.service.FinancialRecordService;
 import com.cuentasclaras.utils.Constant;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
     private final FinancialRecordRepository financialRecordRepository;
     private final UserRepository userRepository;
+    private final BudgetCycleService budgetCycleService;
 
     @Override
     public FinancialRecord createFinancialRecord(FinancialRecord financialRecord, String userDocumentNumber) {
@@ -51,7 +53,12 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
                 financialRecord.setPeriodicity(null);
 
             log.info("Registrando movimiento financiero para el usuario: {}", userDocumentNumber);
-            return financialRecordRepository.saveAndFlush(financialRecord);
+            FinancialRecord saved = financialRecordRepository.saveAndFlush(financialRecord);
+
+            if (FinancialRecordType.EXPENSE.equals(saved.getRecordType()) && saved.getCategory() != null)
+                budgetCycleService.deductFromCategory(userDocumentNumber, saved.getCategory(), saved.getAmount());
+
+            return saved;
 
         } catch (BusinessException e) {
             throw e;
