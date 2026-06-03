@@ -308,6 +308,11 @@ public class Mapper {
                 .userDocumentNumber(config.getUser().getDocumentNumber())
                 .paymentDay(config.getPaymentDay())
                 .nextPaymentDate(config.getNextPaymentDate())
+                .fixedCategories(
+                        config.getFixedCategories() != null
+                                ? config.getFixedCategories().stream().map(this::toFixedBudgetCategoryDto).toList()
+                                : List.of()
+                )
                 .build();
     }
 
@@ -315,6 +320,27 @@ public class Mapper {
         return UserBudgetConfig.builder()
                 .paymentDay(dto.getPaymentDay())
                 .nextPaymentDate(dto.getNextPaymentDate())
+                .fixedCategories(
+                        dto.getFixedCategories() != null
+                                ? new java.util.ArrayList<>(dto.getFixedCategories().stream().map(this::toFixedBudgetCategory).toList())
+                                : new java.util.ArrayList<>()
+                )
+                .build();
+    }
+
+    public FixedBudgetCategoryDto toFixedBudgetCategoryDto(FixedBudgetCategory fc) {
+        return FixedBudgetCategoryDto.builder()
+                .id(fc.getId())
+                .categoryName(fc.getCategoryName())
+                .amount(fc.getAmount())
+                .build();
+    }
+
+    public FixedBudgetCategory toFixedBudgetCategory(FixedBudgetCategoryDto dto) {
+        return FixedBudgetCategory.builder()
+                .id(dto.getId())
+                .categoryName(dto.getCategoryName())
+                .amount(dto.getAmount())
                 .build();
     }
 

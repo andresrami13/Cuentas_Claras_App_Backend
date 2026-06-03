@@ -43,3 +43,13 @@ CREATE TABLE user_budget_config (
     CONSTRAINT fk_ubc_user    FOREIGN KEY (user_document_number)
         REFERENCES users (document_number)
 );
+
+CREATE TABLE fixed_budget_category (
+    id                    BIGINT          NOT NULL AUTO_INCREMENT,
+    user_budget_config_id BIGINT          NOT NULL,
+    category_name         VARCHAR(100)    NOT NULL,
+    amount                DECIMAL(15, 2)  NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_fbc_config FOREIGN KEY (user_budget_config_id)
+        REFERENCES user_budget_config (id) ON DELETE CASCADE
+);

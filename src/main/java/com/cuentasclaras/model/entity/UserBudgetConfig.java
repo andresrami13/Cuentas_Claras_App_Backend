@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "user_budget_config")
@@ -34,4 +36,13 @@ public class UserBudgetConfig {
 
     @Column(name = "updated_at")
     private Date updatedAt;
+
+    @OneToMany(
+            mappedBy = "userBudgetConfig",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<FixedBudgetCategory> fixedCategories = new ArrayList<>();
 }

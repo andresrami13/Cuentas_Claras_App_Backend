@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
@@ -26,4 +27,7 @@ public class UserBudgetConfigDto {
 
     @Schema(description = "Fecha del próximo pago", example = "2024-07-15")
     private LocalDate nextPaymentDate;
+
+    @Schema(description = "Categorías fijas de presupuesto que se replican en cada nuevo ciclo")
+    private List<FixedBudgetCategoryDto> fixedCategories;
 }

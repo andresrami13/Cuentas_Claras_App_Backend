@@ -2,6 +2,7 @@ package com.cuentasclaras.service.implementation;
 
 import com.cuentasclaras.exception.BusinessException;
 import com.cuentasclaras.exception.SystemException;
+import com.cuentasclaras.model.entity.FixedBudgetCategory;
 import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.entity.UserBudgetConfig;
 import com.cuentasclaras.repository.UserBudgetConfigRepository;
@@ -38,19 +39,35 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
             User user = userRepository.findById(userDocumentNumber)
                     .orElseThrow(() -> new BusinessException("No existe el usuario con número de documento: " + userDocumentNumber));
 
-            Optional<UserBudgetConfig> existing = userBudgetConfigRepository.findByUser_DocumentNumber(userDocumentNumber);
+            Optional<UserBudgetConfig> existing = userBudgetConfigRepository
+                    .findByUser_DocumentNumberWithCategories(userDocumentNumber);
 
             if (existing.isPresent()) {
                 UserBudgetConfig existingConfig = existing.get();
                 existingConfig.setPaymentDay(config.getPaymentDay());
                 existingConfig.setNextPaymentDate(config.getNextPaymentDate());
                 existingConfig.setUpdatedAt(new Date());
+
+                existingConfig.getFixedCategories().clear();
+                if (config.getFixedCategories() != null) {
+                    for (FixedBudgetCategory fc : config.getFixedCategories()) {
+                        fc.setUserBudgetConfig(existingConfig);
+                        existingConfig.getFixedCategories().add(fc);
+                    }
+                }
+
                 log.info("Actualizando configuración existente para el usuario: {}", userDocumentNumber);
                 return userBudgetConfigRepository.saveAndFlush(existingConfig);
             }
 
             config.setUser(user);
             config.setCreatedAt(new Date());
+            if (config.getFixedCategories() != null) {
+                for (FixedBudgetCategory fc : config.getFixedCategories()) {
+                    fc.setUserBudgetConfig(config);
+                }
+            }
+
             log.info("Creando nueva configuración para el usuario: {}", userDocumentNumber);
             return userBudgetConfigRepository.saveAndFlush(config);
 
@@ -71,7 +88,7 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
             throw new BusinessException("El número de documento del usuario es obligatorio");
 
         try {
-            return userBudgetConfigRepository.findByUser_DocumentNumber(userDocumentNumber)
+            return userBudgetConfigRepository.findByUser_DocumentNumberWithCategories(userDocumentNumber)
                     .orElseThrow(() -> new BusinessException("No existe configuración de presupuesto para el usuario: " + userDocumentNumber));
 
         } catch (BusinessException e) {
