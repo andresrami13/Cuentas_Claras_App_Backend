@@ -232,7 +232,7 @@ public class AiCoachServiceImpl implements AiCoachService {
             recurringRecords.forEach(recordUnit -> context.append("- ")
                     .append(recordUnit.getRecordType())
                     .append(" | ")
-                    .append(recordUnit.getCategory())
+                    .append(recordUnit.getBudgetCategory() != null ? recordUnit.getBudgetCategory().getCategoryName() : "Sin categoría")
                     .append(" | Valor: ")
                     .append(recordUnit.getAmount())
                     .append(" | Periodicidad: ")
