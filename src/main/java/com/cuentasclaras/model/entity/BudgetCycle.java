@@ -1,6 +1,7 @@
 package com.cuentasclaras.model.entity;
 
 import com.cuentasclaras.model.enums.BudgetCycleStatus;
+import com.cuentasclaras.model.enums.Periodicity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,6 +35,10 @@ public class BudgetCycle {
 
     @Column(name = "payment_day", nullable = false)
     private Integer paymentDay;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "periodicity", nullable = false, length = 20)
+    private Periodicity periodicity;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)

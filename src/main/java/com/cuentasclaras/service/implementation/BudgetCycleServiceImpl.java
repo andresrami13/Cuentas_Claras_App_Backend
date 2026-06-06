@@ -6,6 +6,7 @@ import com.cuentasclaras.model.entity.BudgetCategory;
 import com.cuentasclaras.model.entity.BudgetCycle;
 import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.enums.BudgetCycleStatus;
+import com.cuentasclaras.model.enums.Periodicity;
 import com.cuentasclaras.repository.BudgetCategoryRepository;
 import com.cuentasclaras.repository.BudgetCycleRepository;
 import com.cuentasclaras.repository.UserRepository;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 
 @Service
@@ -35,17 +37,14 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
 
-        if (budgetCycle.getStartDate() == null)
-            throw new BusinessException("La fecha de inicio del ciclo es obligatoria");
-
-        if (budgetCycle.getEndDate() == null)
-            throw new BusinessException("La fecha de fin del ciclo es obligatoria");
-
-        if (budgetCycle.getStartDate().isAfter(budgetCycle.getEndDate()))
-            throw new BusinessException("La fecha de inicio no puede ser posterior a la fecha de fin");
-
         if (budgetCycle.getPaymentDay() == null || budgetCycle.getPaymentDay() < 1 || budgetCycle.getPaymentDay() > 31)
             throw new BusinessException("El día de pago debe estar entre 1 y 31");
+
+        if (budgetCycle.getPeriodicity() == null)
+            throw new BusinessException("La periodicidad del ciclo es obligatoria");
+
+        if (!isSupportedPeriodicity(budgetCycle.getPeriodicity()))
+            throw new BusinessException("La periodicidad debe ser WEEKLY, BIWEEKLY o MONTHLY");
 
         try {
             User user = userRepository.findById(userDocumentNumber)
@@ -54,6 +53,11 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
             if (budgetCycleRepository.existsByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE))
                 throw new BusinessException("El usuario ya tiene un ciclo de presupuesto activo");
 
+            LocalDate startDate = LocalDate.now();
+            LocalDate endDate = calculateEndDate(startDate, budgetCycle.getPeriodicity());
+
+            budgetCycle.setStartDate(startDate);
+            budgetCycle.setEndDate(endDate);
             budgetCycle.setUser(user);
             budgetCycle.setStatus(BudgetCycleStatus.ACTIVE);
             budgetCycle.setCreatedAt(new Date());
@@ -168,4 +172,18 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         }
     }
 
+    private boolean isSupportedPeriodicity(Periodicity periodicity) {
+        return periodicity == Periodicity.WEEKLY
+                || periodicity == Periodicity.BIWEEKLY
+                || periodicity == Periodicity.MONTHLY;
+    }
+
+    private LocalDate calculateEndDate(LocalDate startDate, Periodicity periodicity) {
+        return switch (periodicity) {
+            case WEEKLY -> startDate.plusDays(6);
+            case BIWEEKLY -> startDate.plusDays(13);
+            case MONTHLY -> startDate.plusMonths(1).minusDays(1);
+            default -> throw new BusinessException("Periodicidad no soportada: " + periodicity);
+        };
+    }
 }

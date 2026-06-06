@@ -1,6 +1,7 @@
 package com.cuentasclaras.model.dto;
 
 import com.cuentasclaras.model.enums.BudgetCycleStatus;
+import com.cuentasclaras.model.enums.Periodicity;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -31,6 +32,9 @@ public class BudgetCycleDto {
 
     @Schema(description = "Día de pago del usuario (1-31)", example = "15")
     private Integer paymentDay;
+
+    @Schema(description = "Periodicidad del ciclo: WEEKLY, BIWEEKLY o MONTHLY", example = "MONTHLY")
+    private Periodicity periodicity;
 
     @Schema(description = "Estado del ciclo", example = "ACTIVE")
     private BudgetCycleStatus status;

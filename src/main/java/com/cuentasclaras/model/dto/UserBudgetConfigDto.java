@@ -1,5 +1,6 @@
 package com.cuentasclaras.model.dto;
 
+import com.cuentasclaras.model.enums.Periodicity;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -24,6 +25,9 @@ public class UserBudgetConfigDto {
 
     @Schema(description = "Día del mes en que el usuario recibe su pago (1-31)", example = "15")
     private Integer paymentDay;
+
+    @Schema(description = "Periodicidad del pago: WEEKLY, BIWEEKLY o MONTHLY", example = "MONTHLY")
+    private Periodicity periodicity;
 
     @Schema(description = "Fecha del próximo pago", example = "2024-07-15")
     private LocalDate nextPaymentDate;

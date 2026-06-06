@@ -35,6 +35,9 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
         if (config.getPaymentDay() == null || config.getPaymentDay() < 1 || config.getPaymentDay() > 31)
             throw new BusinessException("El día de pago debe estar entre 1 y 31");
 
+        if (config.getPeriodicity() == null)
+            throw new BusinessException("La periodicidad es obligatoria");
+
         try {
             User user = userRepository.findById(userDocumentNumber)
                     .orElseThrow(() -> new BusinessException("No existe el usuario con número de documento: " + userDocumentNumber));
@@ -45,6 +48,7 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
             if (existing.isPresent()) {
                 UserBudgetConfig existingConfig = existing.get();
                 existingConfig.setPaymentDay(config.getPaymentDay());
+                existingConfig.setPeriodicity(config.getPeriodicity());
                 existingConfig.setNextPaymentDate(config.getNextPaymentDate());
                 existingConfig.setUpdatedAt(new Date());
 

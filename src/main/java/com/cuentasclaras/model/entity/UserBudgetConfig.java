@@ -1,5 +1,6 @@
 package com.cuentasclaras.model.entity;
 
+import com.cuentasclaras.model.enums.Periodicity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,10 @@ public class UserBudgetConfig {
 
     @Column(name = "payment_day", nullable = false)
     private Integer paymentDay;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "periodicity", nullable = false, length = 20)
+    private Periodicity periodicity;
 
     @Column(name = "next_payment_date")
     private LocalDate nextPaymentDate;

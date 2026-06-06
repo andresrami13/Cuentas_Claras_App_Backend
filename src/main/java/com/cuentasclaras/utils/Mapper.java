@@ -269,6 +269,7 @@ public class Mapper {
                 .startDate(budgetCycle.getStartDate())
                 .endDate(budgetCycle.getEndDate())
                 .paymentDay(budgetCycle.getPaymentDay())
+                .periodicity(budgetCycle.getPeriodicity())
                 .status(budgetCycle.getStatus())
                 .categories(categoriesDto)
                 .build();
@@ -276,9 +277,8 @@ public class Mapper {
 
     public BudgetCycle toBudgetCycle(BudgetCycleDto dto) {
         return BudgetCycle.builder()
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
                 .paymentDay(dto.getPaymentDay())
+                .periodicity(dto.getPeriodicity())
                 .build();
     }
 
@@ -310,6 +310,7 @@ public class Mapper {
                 .id(config.getId())
                 .userDocumentNumber(config.getUser().getDocumentNumber())
                 .paymentDay(config.getPaymentDay())
+                .periodicity(config.getPeriodicity())
                 .nextPaymentDate(config.getNextPaymentDate())
                 .fixedCategories(
                         config.getFixedCategories() != null
@@ -322,6 +323,7 @@ public class Mapper {
     public UserBudgetConfig toUserBudgetConfig(UserBudgetConfigDto dto) {
         return UserBudgetConfig.builder()
                 .paymentDay(dto.getPaymentDay())
+                .periodicity(dto.getPeriodicity())
                 .nextPaymentDate(dto.getNextPaymentDate())
                 .fixedCategories(
                         dto.getFixedCategories() != null
