@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 @Service
@@ -110,8 +109,6 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
                 throw new BusinessException("Solo se pueden agregar categorías a un ciclo activo");
 
             category.setCycle(cycle);
-            if (category.getSpentAmount() == null)
-                category.setSpentAmount(BigDecimal.ZERO);
             category.setCreatedAt(new Date());
 
             log.info("Registrando categoría '{}' en el ciclo: {}", category.getCategoryName(), cycleId);
@@ -157,9 +154,6 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
             if (category.getAssignedAmount() != null)
                 existing.setAssignedAmount(category.getAssignedAmount());
 
-            if (category.getSpentAmount() != null)
-                existing.setSpentAmount(category.getSpentAmount());
-
             existing.setUpdatedAt(new Date());
 
             log.info("Actualizando categoría id: {} del ciclo: {}", categoryId, cycleId);
@@ -173,22 +167,4 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         }
     }
 
-    @Override
-    public void deductFromCategory(String userDocumentNumber, String categoryName, BigDecimal amount) {
-        try {
-            budgetCycleRepository.findByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE)
-                    .ifPresent(cycle ->
-                            budgetCategoryRepository
-                                    .findByCycle_IdAndCategoryNameIgnoreCase(cycle.getId(), categoryName)
-                                    .ifPresent(cat -> {
-                                        cat.setSpentAmount(cat.getSpentAmount().add(amount));
-                                        cat.setUpdatedAt(new Date());
-                                        budgetCategoryRepository.save(cat);
-                                        log.info("Descontado {} de la categoría '{}' del ciclo: {}", amount, categoryName, cycle.getId());
-                                    })
-                    );
-        } catch (Exception e) {
-            log.warn("No se pudo descontar de la categoría de presupuesto '{}': {}", categoryName, e.getMessage());
-        }
-    }
 }

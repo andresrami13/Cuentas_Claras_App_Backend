@@ -31,8 +31,8 @@ public class FinancialRecordDto {
     )
     private FinancialRecordType recordType;
 
-    @Schema(description = "Categoría del movimiento financiero", example = "Salario")
-    private String category;
+    @Schema(description = "Identificador de la categoría de presupuesto. Obligatorio para egresos, opcional para ingresos.", example = "3")
+    private Long budgetCategoryId;
 
     @Schema(description = "Descripción del movimiento financiero", example = "Salario mensual empresa ABC")
     private String description;

@@ -2,12 +2,13 @@ package com.cuentasclaras.service.implementation;
 
 import com.cuentasclaras.exception.BusinessException;
 import com.cuentasclaras.exception.SystemException;
+import com.cuentasclaras.model.entity.BudgetCategory;
 import com.cuentasclaras.model.entity.FinancialRecord;
 import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.enums.FinancialRecordType;
+import com.cuentasclaras.repository.BudgetCategoryRepository;
 import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
-import com.cuentasclaras.service.BudgetCycleService;
 import com.cuentasclaras.service.FinancialRecordService;
 import com.cuentasclaras.utils.Constant;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -27,7 +27,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
     private final FinancialRecordRepository financialRecordRepository;
     private final UserRepository userRepository;
-    private final BudgetCycleService budgetCycleService;
+    private final BudgetCategoryRepository budgetCategoryRepository;
 
     @Override
     public FinancialRecord createFinancialRecord(FinancialRecord financialRecord, String userDocumentNumber) {
@@ -43,6 +43,13 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
                 .orElseThrow(() -> new BusinessException("No existe el usuario con número de documento: " + userDocumentNumber));
 
         try {
+            if (financialRecord.getBudgetCategory() != null) {
+                BudgetCategory category = budgetCategoryRepository
+                        .findById(financialRecord.getBudgetCategory().getId())
+                        .orElseThrow(() -> new BusinessException("No existe la categoría de presupuesto con id: " + financialRecord.getBudgetCategory().getId()));
+                financialRecord.setBudgetCategory(category);
+            }
+
             financialRecord.setUser(user);
             financialRecord.setCreatedAt(new Date());
 
@@ -53,12 +60,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
                 financialRecord.setPeriodicity(null);
 
             log.info("Registrando movimiento financiero para el usuario: {}", userDocumentNumber);
-            FinancialRecord saved = financialRecordRepository.saveAndFlush(financialRecord);
-
-            if (FinancialRecordType.EXPENSE.equals(saved.getRecordType()) && saved.getCategory() != null)
-                budgetCycleService.deductFromCategory(userDocumentNumber, saved.getCategory(), saved.getAmount());
-
-            return saved;
+            return financialRecordRepository.saveAndFlush(financialRecord);
 
         } catch (BusinessException e) {
             throw e;
@@ -83,7 +85,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
         try {
             existingFinancialRecord.setRecordType(financialRecord.getRecordType());
-            existingFinancialRecord.setCategory(financialRecord.getCategory());
+            existingFinancialRecord.setBudgetCategory(financialRecord.getBudgetCategory());
             existingFinancialRecord.setDescription(financialRecord.getDescription());
             existingFinancialRecord.setAmount(financialRecord.getAmount());
             existingFinancialRecord.setRecordDate(financialRecord.getRecordDate());
@@ -202,8 +204,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         if (financialRecord.getRecordType() == null)
             throw new BusinessException("El tipo de movimiento financiero es obligatorio");
 
-        if (financialRecord.getCategory() == null || financialRecord.getCategory().isBlank())
-            throw new BusinessException("La categoría del movimiento financiero es obligatoria");
+        if (FinancialRecordType.EXPENSE.equals(financialRecord.getRecordType()) && financialRecord.getBudgetCategory() == null)
+            throw new BusinessException("La categoría de presupuesto es obligatoria para movimientos de egreso");
 
         if (financialRecord.getAmount() == null)
             throw new BusinessException("El valor del movimiento financiero es obligatorio");

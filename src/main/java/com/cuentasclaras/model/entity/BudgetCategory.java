@@ -2,6 +2,7 @@ package com.cuentasclaras.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -29,9 +30,8 @@ public class BudgetCategory {
     @Column(name = "assigned_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal assignedAmount;
 
-    @Column(name = "spent_amount", nullable = false, precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal spentAmount = BigDecimal.ZERO;
+    @Formula("(SELECT COALESCE(SUM(fr.amount), 0) FROM financial_records fr WHERE fr.budget_category_id = id AND fr.record_type = 'EXPENSE')")
+    private BigDecimal spentAmount;
 
     @Column(name = "created_at", nullable = false)
     private Date createdAt;

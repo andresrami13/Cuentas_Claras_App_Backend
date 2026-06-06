@@ -127,7 +127,7 @@ public class Mapper {
                 .financialRecordId(financialRecord.getFinancialRecordId())
                 .userDocumentNumber(financialRecord.getUser().getDocumentNumber())
                 .recordType(financialRecord.getRecordType())
-                .category(financialRecord.getCategory())
+                .budgetCategoryId(financialRecord.getBudgetCategory() != null ? financialRecord.getBudgetCategory().getId() : null)
                 .description(financialRecord.getDescription())
                 .amount(financialRecord.getAmount())
                 .recordDate(financialRecord.getRecordDate())
@@ -145,11 +145,15 @@ public class Mapper {
                 .documentNumber(financialRecordDto.getUserDocumentNumber())
                 .build();
 
+        BudgetCategory budgetCategory = financialRecordDto.getBudgetCategoryId() != null
+                ? BudgetCategory.builder().id(financialRecordDto.getBudgetCategoryId()).build()
+                : null;
+
         return FinancialRecord.builder()
                 .financialRecordId(financialRecordDto.getFinancialRecordId())
                 .user(user)
                 .recordType(financialRecordDto.getRecordType())
-                .category(financialRecordDto.getCategory())
+                .budgetCategory(budgetCategory)
                 .description(financialRecordDto.getDescription())
                 .amount(financialRecordDto.getAmount())
                 .recordDate(financialRecordDto.getRecordDate())
@@ -297,7 +301,6 @@ public class Mapper {
         return BudgetCategory.builder()
                 .categoryName(dto.getCategoryName())
                 .assignedAmount(dto.getAssignedAmount())
-                .spentAmount(dto.getSpentAmount())
                 .build();
     }
 

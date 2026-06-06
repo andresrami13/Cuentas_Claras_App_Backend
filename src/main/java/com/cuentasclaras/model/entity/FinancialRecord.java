@@ -31,8 +31,9 @@ public class FinancialRecord {
     @Column(name = "record_type", nullable = false, length = 20)
     private FinancialRecordType recordType;
 
-    @Column(name = "category", nullable = false, length = 100)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "budget_category_id")
+    private BudgetCategory budgetCategory;
 
     @Column(name = "description", length = 250)
     private String description;
