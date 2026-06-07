@@ -15,7 +15,7 @@ import com.cuentasclaras.repository.FinancialGoalRepository;
 import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
 import com.cuentasclaras.service.AiCoachService;
-import com.cuentasclaras.service.OpenAiClientService;
+import com.cuentasclaras.service.GeminiClientService;
 import com.cuentasclaras.utils.Constant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,10 +41,10 @@ public class AiCoachServiceImpl implements AiCoachService {
     private final FinancialGoalRepository financialGoalRepository;
     private final FinancialRecordRepository financialRecordRepository;
     private final DebtRepository debtRepository;
-    private final OpenAiClientService openAiClientService;
+    private final GeminiClientService geminiClientService;
 
-    @Value("${openai.model}")
-    private String openAiModel;
+    @Value("${gemini.model}")
+    private String geminiModel;
 
     @Override
     public AiCoachRequest requestFinancialAdvice(String userDocumentNumber, Long financialGoalId, String question) {
@@ -90,7 +90,7 @@ public class AiCoachServiceImpl implements AiCoachService {
             String prompt = this.buildPrompt(financialContext, question);
 
             log.info("Solicitando recomendación financiera al coach IA para el usuario: {}", userDocumentNumber);
-            String aiResponse = openAiClientService.generateFinancialAdvice(prompt);
+            String aiResponse = geminiClientService.generateFinancialAdvice(prompt);
 
             AiCoachRequest aiCoachRequest = AiCoachRequest.builder()
                     .user(user)
@@ -98,7 +98,7 @@ public class AiCoachServiceImpl implements AiCoachService {
                     .question(question)
                     .financialContext(financialContext)
                     .aiResponse(aiResponse)
-                    .model(openAiModel)
+                    .model(geminiModel)
                     .createdAt(new Date())
                     .build();
 
