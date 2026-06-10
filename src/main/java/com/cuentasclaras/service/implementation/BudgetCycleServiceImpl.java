@@ -172,6 +172,40 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         }
     }
 
+    @Override
+    public void deleteCategory(Long cycleId, Long categoryId) {
+        log.info("Eliminando categoría {} del ciclo: {}", categoryId, cycleId);
+
+        if (cycleId == null)
+            throw new BusinessException("El identificador del ciclo es obligatorio");
+
+        if (categoryId == null)
+            throw new BusinessException("El identificador de la categoría es obligatorio");
+
+        try {
+            BudgetCycle cycle = budgetCycleRepository.findById(cycleId)
+                    .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            if (!BudgetCycleStatus.ACTIVE.equals(cycle.getStatus()))
+                throw new BusinessException("Solo se pueden eliminar categorías de un ciclo activo");
+
+            BudgetCategory existing = budgetCategoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new BusinessException("No existe la categoría con id: " + categoryId));
+
+            if (!existing.getCycle().getId().equals(cycleId))
+                throw new BusinessException("La categoría no pertenece al ciclo indicado");
+
+            log.info("Eliminando categoría id: {} del ciclo: {}", categoryId, cycleId);
+            budgetCategoryRepository.delete(existing);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar eliminar categoría: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar eliminar categoría");
+        }
+    }
+
     private boolean isSupportedPeriodicity(Periodicity periodicity) {
         return periodicity == Periodicity.WEEKLY
                 || periodicity == Periodicity.BIWEEKLY

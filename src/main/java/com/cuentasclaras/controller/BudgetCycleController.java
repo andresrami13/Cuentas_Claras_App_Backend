@@ -62,6 +62,19 @@ public class BudgetCycleController {
                 .body(ApiResponse.of(HttpStatus.CREATED.value(), "Categoría agregada exitosamente", response));
     }
 
+    @DeleteMapping("/{cycleId}/categories/{categoryId}")
+    @Operation(summary = "Eliminar categoría del ciclo", description = "Elimina una categoría existente del ciclo de presupuesto activo.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Categoría eliminada exitosamente")
+    public ResponseEntity<ApiResponse<Void>> deleteCategory(
+            @Parameter(description = "Identificador del ciclo", example = "1")
+            @PathVariable Long cycleId,
+            @Parameter(description = "Identificador de la categoría", example = "1")
+            @PathVariable Long categoryId) {
+
+        budgetCycleService.deleteCategory(cycleId, categoryId);
+        return ResponseEntity.ok(ApiResponse.of(HttpStatus.OK.value(), "Categoría eliminada exitosamente", null));
+    }
+
     @PutMapping("/{cycleId}/categories/{categoryId}")
     @Operation(summary = "Actualizar categoría del ciclo", description = "Actualiza el nombre o los montos de una categoría existente en el ciclo.")
     public ResponseEntity<ApiResponse<BudgetCategoryDto>> updateCategory(

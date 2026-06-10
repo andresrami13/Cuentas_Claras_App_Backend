@@ -8,4 +8,5 @@ public interface BudgetCycleService {
     BudgetCycle getActiveCycle(String userDocumentNumber);
     BudgetCategory addCategory(Long cycleId, BudgetCategory category);
     BudgetCategory updateCategory(Long cycleId, Long categoryId, BudgetCategory category);
+    void deleteCategory(Long cycleId, Long categoryId);
 }
