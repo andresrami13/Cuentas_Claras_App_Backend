@@ -73,6 +73,21 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         }
     }
 
+    @Override
+    public boolean validateConnection() {
+        try {
+            if ("sin-key".equals(geminiApiKey) || geminiApiKey == null || geminiApiKey.isBlank()) {
+                log.warn("GEMINI_API_KEY no está configurada");
+                return false;
+            }
+            String testResponse = generateFinancialAdvice("Responde únicamente con la palabra: OK");
+            return testResponse != null && !testResponse.isBlank();
+        } catch (Exception e) {
+            log.error("Fallo en la validación de conexión con Gemini", e);
+            return false;
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private String extractText(Map<?, ?> response) {
         try {

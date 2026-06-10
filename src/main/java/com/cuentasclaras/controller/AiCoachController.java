@@ -3,6 +3,7 @@ package com.cuentasclaras.controller;
 import com.cuentasclaras.model.dto.AiCoachRequestDto;
 import com.cuentasclaras.model.dto.ApiResponse;
 import com.cuentasclaras.service.AiCoachService;
+import com.cuentasclaras.service.GeminiClientService;
 import com.cuentasclaras.utils.Mapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,7 +22,26 @@ import java.util.List;
 public class AiCoachController {
 
     private final AiCoachService aiCoachService;
+    private final GeminiClientService geminiClientService;
     private final Mapper mapper;
+
+    @GetMapping("/health")
+    @Operation(
+            summary = "Verificar conexión con Gemini",
+            description = "Valida que la API key de Gemini esté configurada y que la conexión con el modelo funcione correctamente."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Conexión con Gemini verificada correctamente")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "La conexión con Gemini falló")
+    public ResponseEntity<ApiResponse<String>> checkGeminiHealth() {
+        boolean isConnected = geminiClientService.validateConnection();
+
+        if (isConnected) {
+            return ResponseEntity.ok(ApiResponse.of(200, "Conexión con Gemini verificada correctamente", "OK"));
+        }
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.of(500, "La conexión con Gemini falló. Verifique que GEMINI_API_KEY esté configurada y sea válida.", "FAILED"));
+    }
 
     @PostMapping("/advice")
     @Operation(
