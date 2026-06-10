@@ -44,4 +44,17 @@ public class UserBudgetConfigController {
         UserBudgetConfigDto response = mapper.toUserBudgetConfigDto(userBudgetConfigService.getConfig(documentNumber));
         return ResponseEntity.ok(ApiResponse.of(HttpStatus.OK.value(), "Configuración de presupuesto obtenida exitosamente", response));
     }
+
+    @DeleteMapping("/{documentNumber}/fixed-categories/{categoryId}")
+    @Operation(summary = "Eliminar categoría fija", description = "Elimina una categoría fija de la configuración de presupuesto del usuario.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Categoría fija eliminada exitosamente")
+    public ResponseEntity<ApiResponse<Void>> deleteFixedCategory(
+            @Parameter(description = "Número de documento del usuario", example = "1019109757")
+            @PathVariable String documentNumber,
+            @Parameter(description = "Identificador de la categoría fija", example = "1")
+            @PathVariable Long categoryId) {
+
+        userBudgetConfigService.deleteFixedCategory(documentNumber, categoryId);
+        return ResponseEntity.ok(ApiResponse.of(HttpStatus.OK.value(), "Categoría fija eliminada exitosamente", null));
+    }
 }

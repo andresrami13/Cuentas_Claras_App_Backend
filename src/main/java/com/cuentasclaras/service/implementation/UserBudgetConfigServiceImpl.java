@@ -5,6 +5,7 @@ import com.cuentasclaras.exception.SystemException;
 import com.cuentasclaras.model.entity.FixedBudgetCategory;
 import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.entity.UserBudgetConfig;
+import com.cuentasclaras.repository.FixedBudgetCategoryRepository;
 import com.cuentasclaras.repository.UserBudgetConfigRepository;
 import com.cuentasclaras.repository.UserRepository;
 import com.cuentasclaras.service.UserBudgetConfigService;
@@ -23,6 +24,7 @@ import java.util.Optional;
 public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
 
     private final UserBudgetConfigRepository userBudgetConfigRepository;
+    private final FixedBudgetCategoryRepository fixedBudgetCategoryRepository;
     private final UserRepository userRepository;
 
     @Override
@@ -100,6 +102,38 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
         } catch (Exception e) {
             log.error("Error al consultar configuración de presupuesto: {}", e.getMessage(), e);
             throw new SystemException("Error al consultar configuración de presupuesto");
+        }
+    }
+
+    @Override
+    public void deleteFixedCategory(String userDocumentNumber, Long categoryId) {
+        log.info("Eliminando categoría fija {} del usuario: {}", categoryId, userDocumentNumber);
+
+        if (userDocumentNumber == null || userDocumentNumber.isBlank())
+            throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        if (categoryId == null)
+            throw new BusinessException("El identificador de la categoría es obligatorio");
+
+        try {
+            UserBudgetConfig config = userBudgetConfigRepository
+                    .findByUser_DocumentNumberWithCategories(userDocumentNumber)
+                    .orElseThrow(() -> new BusinessException("No existe configuración de presupuesto para el usuario: " + userDocumentNumber));
+
+            FixedBudgetCategory category = fixedBudgetCategoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new BusinessException("No existe la categoría fija con id: " + categoryId));
+
+            if (!category.getUserBudgetConfig().getId().equals(config.getId()))
+                throw new BusinessException("La categoría fija no pertenece a la configuración del usuario indicado");
+
+            log.info("Eliminando categoría fija id: {} del usuario: {}", categoryId, userDocumentNumber);
+            fixedBudgetCategoryRepository.delete(category);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al eliminar categoría fija: {}", e.getMessage(), e);
+            throw new SystemException("Error al eliminar categoría fija");
         }
     }
 }
