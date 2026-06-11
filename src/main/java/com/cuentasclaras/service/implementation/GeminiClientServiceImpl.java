@@ -1,6 +1,7 @@
 package com.cuentasclaras.service.implementation;
 
 import com.cuentasclaras.exception.SystemException;
+import com.cuentasclaras.model.dto.ConversationTurn;
 import com.cuentasclaras.service.GeminiClientService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,15 +19,6 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     private static final String GEMINI_API_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
 
-    private static final String SYSTEM_INSTRUCTION = """
-            Eres un coach financiero para una aplicación web de gestión financiera personal.
-            Responde siempre en español.
-            Da recomendaciones prácticas, responsables y claras.
-            No prometas resultados financieros.
-            No recomiendes inversiones específicas.
-            No inventes información que no esté en el contexto.
-            """;
-
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
@@ -36,22 +28,25 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     private final RestClient restClient = RestClient.create();
 
     @Override
-    public String generateFinancialAdvice(String prompt) {
+    public String generateFinancialAdvice(String systemContext, String currentQuestion, List<ConversationTurn> history) {
         try {
             log.info("Iniciando petición al modelo de Gemini");
 
             String url = GEMINI_API_URL.formatted(geminiModel, geminiApiKey);
 
+            List<Map<String, Object>> contents = new java.util.ArrayList<>();
+            if (history != null) {
+                for (ConversationTurn turn : history) {
+                    contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", turn.userMessage()))));
+                    contents.add(Map.of("role", "model", "parts", List.of(Map.of("text", turn.modelResponse()))));
+                }
+            }
+            contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", currentQuestion))));
+
             Map<String, Object> requestBody = Map.of(
-                    "system_instruction", Map.of(
-                            "parts", List.of(Map.of("text", SYSTEM_INSTRUCTION))
-                    ),
-                    "contents", List.of(
-                            Map.of(
-                                    "role", "user",
-                                    "parts", List.of(Map.of("text", prompt))
-                            )
-                    )
+                    "system_instruction", Map.of("parts", List.of(Map.of("text", systemContext))),
+                    "contents", contents,
+                    "generationConfig", Map.of("maxOutputTokens", 600)
             );
 
             Map<?, ?> response = restClient.post()
@@ -80,7 +75,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
                 log.warn("GEMINI_API_KEY no está configurada");
                 return false;
             }
-            String testResponse = generateFinancialAdvice("Responde únicamente con la palabra: OK");
+            String testResponse = generateFinancialAdvice("Responde únicamente con la palabra: OK", "OK", List.of());
             return testResponse != null && !testResponse.isBlank();
         } catch (Exception e) {
             log.error("Fallo en la validación de conexión con Gemini", e);
