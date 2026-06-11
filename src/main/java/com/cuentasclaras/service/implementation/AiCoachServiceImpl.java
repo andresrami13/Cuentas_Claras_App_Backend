@@ -237,7 +237,7 @@ public class AiCoachServiceImpl implements AiCoachService {
                 - No prometas resultados financieros ni recomiendes inversiones específicas.
                 - No uses lenguaje alarmista.
                 - Si el historial de conversación está disponible, úsalo para dar continuidad sin repetir exactamente lo mismo.
-                - Sé conciso: responde lo justo y necesario para resolver la pregunta del usuario.
+                - Sé conciso y directo por defecto. Solo extiende la respuesta si el usuario pide explícitamente más detalle, un plan completo o una explicación profunda.
 
                 Contexto financiero actual del usuario:
                 %s

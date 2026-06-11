@@ -45,8 +45,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
 
             Map<String, Object> requestBody = Map.of(
                     "system_instruction", Map.of("parts", List.of(Map.of("text", systemContext))),
-                    "contents", contents,
-                    "generationConfig", Map.of("maxOutputTokens", 600)
+                    "contents", contents
             );
 
             Map<?, ?> response = restClient.post()
