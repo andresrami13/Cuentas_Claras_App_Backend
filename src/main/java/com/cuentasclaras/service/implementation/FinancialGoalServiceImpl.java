@@ -5,6 +5,7 @@ import com.cuentasclaras.exception.SystemException;
 import com.cuentasclaras.model.entity.FinancialGoal;
 import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.enums.FinancialGoalStatus;
+import com.cuentasclaras.repository.AiCoachRequestRepository;
 import com.cuentasclaras.repository.FinancialGoalRepository;
 import com.cuentasclaras.repository.UserRepository;
 import com.cuentasclaras.service.FinancialGoalService;
@@ -26,6 +27,7 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
 
     private final FinancialGoalRepository financialGoalRepository;
     private final UserRepository userRepository;
+    private final AiCoachRequestRepository aiCoachRequestRepository;
 
     @Override
     public FinancialGoal createFinancialGoal(FinancialGoal financialGoal, String userDocumentNumber) {
@@ -107,6 +109,9 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
                 .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_FINANCIAL_GOAL_WITH_ID.concat(String.valueOf(financialGoalId))));
 
         try {
+            log.info("Eliminando conversaciones del coach IA asociadas a la meta: {}", financialGoalId);
+            aiCoachRequestRepository.deleteByFinancialGoal_FinancialGoalId(financialGoalId);
+
             log.info("Eliminando meta financiera con id: {}", financialGoalId);
             financialGoalRepository.delete(existingFinancialGoal);
 

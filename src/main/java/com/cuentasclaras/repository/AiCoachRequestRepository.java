@@ -13,4 +13,6 @@ public interface AiCoachRequestRepository extends JpaRepository<AiCoachRequest, 
             String userDocumentNumber,
             Long financialGoalId
     );
+
+    void deleteByFinancialGoal_FinancialGoalId(Long financialGoalId);
 }
