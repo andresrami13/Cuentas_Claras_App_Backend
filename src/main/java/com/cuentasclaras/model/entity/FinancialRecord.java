@@ -2,6 +2,8 @@ package com.cuentasclaras.model.entity;
 
 import com.cuentasclaras.model.enums.FinancialRecordType;
 import com.cuentasclaras.model.enums.Periodicity;
+import com.cuentasclaras.security.converter.BigDecimalCryptoConverter;
+import com.cuentasclaras.security.converter.StringCryptoConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,10 +37,12 @@ public class FinancialRecord {
     @JoinColumn(name = "budget_category_id")
     private BudgetCategory budgetCategory;
 
-    @Column(name = "description", length = 250)
+    @Convert(converter = StringCryptoConverter.class)
+    @Column(name = "description", length = 1024)
     private String description;
 
-    @Column(name = "amount", nullable = false, precision = 15, scale = 2)
+    @Convert(converter = BigDecimalCryptoConverter.class)
+    @Column(name = "amount", nullable = false, length = 255)
     private BigDecimal amount;
 
     @Column(name = "record_date", nullable = false)

@@ -18,12 +18,13 @@ CREATE TABLE budget_cycles (
         REFERENCES users (document_number)
 );
 
+-- category_name y assigned_amount almacenan texto CIFRADO (AES-256-GCM).
+-- spent_amount no se almacena: la aplicación lo calcula sumando los gastos descifrados.
 CREATE TABLE budget_categories (
     id              BIGINT          NOT NULL AUTO_INCREMENT,
     cycle_id        BIGINT          NOT NULL,
-    category_name   VARCHAR(150)    NOT NULL,
-    assigned_amount DECIMAL(15, 2)  NOT NULL,
-    spent_amount    DECIMAL(15, 2)  NOT NULL DEFAULT 0.00,
+    category_name   VARCHAR(1024)   NOT NULL,
+    assigned_amount VARCHAR(255)    NOT NULL,
     created_at      DATETIME        NOT NULL,
     updated_at      DATETIME,
     PRIMARY KEY (id),
@@ -44,11 +45,12 @@ CREATE TABLE user_budget_config (
         REFERENCES users (document_number)
 );
 
+-- category_name y amount almacenan texto CIFRADO (AES-256-GCM).
 CREATE TABLE fixed_budget_category (
     id                    BIGINT          NOT NULL AUTO_INCREMENT,
     user_budget_config_id BIGINT          NOT NULL,
-    category_name         VARCHAR(100)    NOT NULL,
-    amount                DECIMAL(15, 2)  NOT NULL,
+    category_name         VARCHAR(1024)   NOT NULL,
+    amount                VARCHAR(255)    NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_fbc_config FOREIGN KEY (user_budget_config_id)
         REFERENCES user_budget_config (id) ON DELETE CASCADE

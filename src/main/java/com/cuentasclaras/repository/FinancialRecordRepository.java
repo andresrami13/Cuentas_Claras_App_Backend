@@ -19,4 +19,9 @@ public interface FinancialRecordRepository extends JpaRepository<FinancialRecord
             String userDocumentNumber,
             Boolean recurring
     );
+
+    List<FinancialRecord> findByBudgetCategory_IdAndRecordType(
+            Long budgetCategoryId,
+            FinancialRecordType recordType
+    );
 }

@@ -14,11 +14,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+    # En producción debe quedar en false para no volcar SQL (con datos) en los logs
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format_sql: ${JPA_SHOW_SQL:false}
 
 gemini:
   api:
@@ -36,6 +37,10 @@ app:
     default-role-code: ${DEFAULT_ROLE_CODE:USR}
     # Rol con privilegios de administración (gestión de usuarios, roles y permisos).
     admin-role-code: ${ADMIN_ROLE_CODE:ADM}
+    # Clave AES-256 (32 bytes en Base64) para cifrar columnas financieras sensibles.
+    # CRÍTICA: si se pierde o cambia, los datos cifrados quedan ilegibles. Sin valor
+    # se usa una clave de desarrollo insegura (solo para local).
+    data-encryption-key: ${DATA_ENCRYPTION_KEY:}
     rate-limit:
       login:
         max-requests: ${RATE_LIMIT_LOGIN_MAX:5}
@@ -53,4 +58,5 @@ springdoc:
 
 logging:
   level:
-    org.hibernate.SQL: DEBUG
+    # DEBUG vuelca cada consulta SQL; en producción dejar en WARN
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG:WARN}

@@ -1,6 +1,8 @@
 package com.cuentasclaras.model.entity;
 
 import com.cuentasclaras.model.enums.DebtStatus;
+import com.cuentasclaras.security.converter.BigDecimalCryptoConverter;
+import com.cuentasclaras.security.converter.StringCryptoConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,16 +28,20 @@ public class Debt {
     @JoinColumn(name = "user_document_number", nullable = false)
     private User user;
 
-    @Column(name = "creditor", nullable = false, length = 150)
+    @Convert(converter = StringCryptoConverter.class)
+    @Column(name = "creditor", nullable = false, length = 1024)
     private String creditor;
 
-    @Column(name = "description", length = 250)
+    @Convert(converter = StringCryptoConverter.class)
+    @Column(name = "description", length = 1024)
     private String description;
 
-    @Column(name = "initial_amount", nullable = false, precision = 15, scale = 2)
+    @Convert(converter = BigDecimalCryptoConverter.class)
+    @Column(name = "initial_amount", nullable = false, length = 255)
     private BigDecimal initialAmount;
 
-    @Column(name = "pending_amount", nullable = false, precision = 15, scale = 2)
+    @Convert(converter = BigDecimalCryptoConverter.class)
+    @Column(name = "pending_amount", nullable = false, length = 255)
     private BigDecimal pendingAmount;
 
     @Column(name = "start_date", nullable = false)

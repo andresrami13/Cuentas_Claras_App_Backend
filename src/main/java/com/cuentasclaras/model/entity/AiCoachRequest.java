@@ -1,5 +1,6 @@
 package com.cuentasclaras.model.entity;
 
+import com.cuentasclaras.security.converter.StringCryptoConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,14 +28,16 @@ public class AiCoachRequest {
     @JoinColumn(name = "financial_goal_id")
     private FinancialGoal financialGoal;
 
-    @Column(name = "question", nullable = false, length = 1000)
+    @Convert(converter = StringCryptoConverter.class)
+    @Column(name = "question", nullable = false, length = 2048)
     private String question;
 
+    // Conservado como nullable para leer registros antiguos; los nuevos no lo guardan.
     @Lob
-    @Column(name = "financial_context", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "financial_context", columnDefinition = "TEXT")
     private String financialContext;
 
-    @Lob
+    @Convert(converter = StringCryptoConverter.class)
     @Column(name = "ai_response", nullable = false, columnDefinition = "TEXT")
     private String aiResponse;
 

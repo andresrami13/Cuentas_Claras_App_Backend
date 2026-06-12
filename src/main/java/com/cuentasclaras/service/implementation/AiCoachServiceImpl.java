@@ -107,11 +107,13 @@ public class AiCoachServiceImpl implements AiCoachService {
             log.info("Solicitando recomendación financiera al coach IA para el usuario: {}", userDocumentNumber);
             String aiResponse = geminiClientService.generateFinancialAdvice(systemInstruction, question, conversationHistory);
 
+            // No se persiste el contexto financiero: se construye, se envía a Gemini
+            // y se descarta. Así no se acumula una "foto" de las finanzas del usuario
+            // en la base de datos. La conversación (pregunta + respuesta) sí se guarda.
             AiCoachRequest aiCoachRequest = AiCoachRequest.builder()
                     .user(user)
                     .financialGoal(financialGoal)
                     .question(question)
-                    .financialContext(financialContext)
                     .aiResponse(aiResponse)
                     .model(geminiModel)
                     .createdAt(new Date())

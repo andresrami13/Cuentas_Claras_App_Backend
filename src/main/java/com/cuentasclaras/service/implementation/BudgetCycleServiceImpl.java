@@ -4,11 +4,14 @@ import com.cuentasclaras.exception.BusinessException;
 import com.cuentasclaras.exception.SystemException;
 import com.cuentasclaras.model.entity.BudgetCategory;
 import com.cuentasclaras.model.entity.BudgetCycle;
+import com.cuentasclaras.model.entity.FinancialRecord;
 import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.enums.BudgetCycleStatus;
+import com.cuentasclaras.model.enums.FinancialRecordType;
 import com.cuentasclaras.model.enums.Periodicity;
 import com.cuentasclaras.repository.BudgetCategoryRepository;
 import com.cuentasclaras.repository.BudgetCycleRepository;
+import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
 import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.BudgetCycleService;
@@ -30,6 +33,7 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
     private final BudgetCycleRepository budgetCycleRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
     private final UserRepository userRepository;
+    private final FinancialRecordRepository financialRecordRepository;
     private final SecurityUtils securityUtils;
 
     @Override
@@ -88,8 +92,13 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         securityUtils.validateSelf(userDocumentNumber);
 
         try {
-            return budgetCycleRepository.findByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE)
+            BudgetCycle cycle = budgetCycleRepository.findByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE)
                     .orElseThrow(() -> new BusinessException("No existe ciclo de presupuesto activo para el usuario: " + userDocumentNumber));
+
+            if (cycle.getCategories() != null)
+                cycle.getCategories().forEach(c -> c.setSpentAmount(calculateSpentAmount(c.getId())));
+
+            return cycle;
 
         } catch (BusinessException e) {
             throw e;
@@ -125,8 +134,10 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
             category.setCycle(cycle);
             category.setCreatedAt(new Date());
 
-            log.info("Registrando categoría '{}' en el ciclo: {}", category.getCategoryName(), cycleId);
-            return budgetCategoryRepository.saveAndFlush(category);
+            log.info("Registrando categoría en el ciclo: {}", cycleId);
+            BudgetCategory saved = budgetCategoryRepository.saveAndFlush(category);
+            saved.setSpentAmount(calculateSpentAmount(saved.getId()));
+            return saved;
 
         } catch (BusinessException e) {
             throw e;
@@ -174,7 +185,9 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
             existing.setUpdatedAt(new Date());
 
             log.info("Actualizando categoría id: {} del ciclo: {}", categoryId, cycleId);
-            return budgetCategoryRepository.saveAndFlush(existing);
+            BudgetCategory saved = budgetCategoryRepository.saveAndFlush(existing);
+            saved.setSpentAmount(calculateSpentAmount(saved.getId()));
+            return saved;
 
         } catch (BusinessException e) {
             throw e;
@@ -182,6 +195,19 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
             log.error("Error al intentar actualizar categoría: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar actualizar categoría");
         }
+    }
+
+    /**
+     * Suma en memoria los gastos (EXPENSE) asociados a la categoría. Reemplaza la
+     * antigua suma por SQL (@Formula), imposible ahora que los montos están cifrados.
+     */
+    private BigDecimal calculateSpentAmount(Long categoryId) {
+        return financialRecordRepository
+                .findByBudgetCategory_IdAndRecordType(categoryId, FinancialRecordType.EXPENSE)
+                .stream()
+                .map(FinancialRecord::getAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override

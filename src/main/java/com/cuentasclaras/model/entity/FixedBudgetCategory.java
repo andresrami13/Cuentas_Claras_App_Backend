@@ -1,5 +1,7 @@
 package com.cuentasclaras.model.entity;
 
+import com.cuentasclaras.security.converter.BigDecimalCryptoConverter;
+import com.cuentasclaras.security.converter.StringCryptoConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,9 +24,11 @@ public class FixedBudgetCategory {
     @JoinColumn(name = "user_budget_config_id", nullable = false)
     private UserBudgetConfig userBudgetConfig;
 
-    @Column(name = "category_name", nullable = false, length = 100)
+    @Convert(converter = StringCryptoConverter.class)
+    @Column(name = "category_name", nullable = false, length = 1024)
     private String categoryName;
 
-    @Column(name = "amount", nullable = false, precision = 15, scale = 2)
+    @Convert(converter = BigDecimalCryptoConverter.class)
+    @Column(name = "amount", nullable = false, length = 255)
     private BigDecimal amount;
 }
