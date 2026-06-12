@@ -17,7 +17,7 @@ import java.util.Map;
 public class GeminiClientServiceImpl implements GeminiClientService {
 
     private static final String GEMINI_API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
 
     @Value("${gemini.api.key}")
     private String geminiApiKey;
@@ -32,7 +32,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         try {
             log.info("Iniciando petición al modelo de Gemini");
 
-            String url = GEMINI_API_URL.formatted(geminiModel, geminiApiKey);
+            String url = GEMINI_API_URL.formatted(geminiModel);
 
             List<Map<String, Object>> contents = new java.util.ArrayList<>();
             if (history != null) {
@@ -50,6 +50,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
 
             Map<?, ?> response = restClient.post()
                     .uri(url)
+                    .header("x-goog-api-key", geminiApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()

@@ -50,6 +50,10 @@ public class AiCoachServiceImpl implements AiCoachService {
     @Value("${gemini.model}")
     private String geminiModel;
 
+    // La columna question admite 1000 caracteres; limitamos antes de procesar
+    // para evitar abusos de costo y truncamientos en base de datos.
+    private static final int MAX_QUESTION_LENGTH = 1000;
+
     @Override
     public AiCoachRequest requestFinancialAdvice(String userDocumentNumber, Long financialGoalId, String question) {
 
@@ -65,6 +69,9 @@ public class AiCoachServiceImpl implements AiCoachService {
 
         if (question == null || question.isBlank())
             throw new BusinessException("La pregunta para el coach financiero IA es obligatoria");
+
+        if (question.length() > MAX_QUESTION_LENGTH)
+            throw new BusinessException("La pregunta no puede superar los " + MAX_QUESTION_LENGTH + " caracteres");
 
         User user = userRepository.findById(userDocumentNumber)
                 .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_USER_WITH_DOCUMENT_NUMBER.concat(userDocumentNumber)));

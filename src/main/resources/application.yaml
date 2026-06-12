@@ -36,6 +36,20 @@ app:
     default-role-code: ${DEFAULT_ROLE_CODE:USR}
     # Rol con privilegios de administración (gestión de usuarios, roles y permisos).
     admin-role-code: ${ADMIN_ROLE_CODE:ADM}
+    rate-limit:
+      login:
+        max-requests: ${RATE_LIMIT_LOGIN_MAX:5}
+        window-seconds: ${RATE_LIMIT_LOGIN_WINDOW:60}
+      ai-coach:
+        max-requests: ${RATE_LIMIT_AI_MAX:15}
+        window-seconds: ${RATE_LIMIT_AI_WINDOW:3600}
+
+# Documentación del API. Poner SWAGGER_ENABLED=false en producción.
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
 
 logging:
   level:
