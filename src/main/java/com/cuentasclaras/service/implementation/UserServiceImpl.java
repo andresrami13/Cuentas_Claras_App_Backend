@@ -11,6 +11,7 @@ import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.UserService;
 import com.cuentasclaras.utils.Constant;
 import com.cuentasclaras.utils.Encryption;
+import com.cuentasclaras.utils.LogMask;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,13 +37,14 @@ public class UserServiceImpl implements UserService {
     @Value("${app.security.default-role-code}")
     private String defaultRoleCode;
 
-    @Override
-    public User createUser(@Valid User user) {
-        return this.createUser(user, null, null, null);
-    }
+    @Value("${app.security.login.max-failed-attempts:10}")
+    private int maxFailedAttempts;
+
+    @Value("${app.security.login.lockout-minutes:15}")
+    private long lockoutMinutes;
 
     @Override
-    public User createUser(@Valid User user, String license, String specialityCode, String bloodType) {
+    public User createUser(@Valid User user) {
 
         log.info("Inicio de validaciones de negocio para crear usuario");
         if (user.getDocumentNumber() == null || user.getDocumentNumber().isBlank())
@@ -51,6 +53,7 @@ public class UserServiceImpl implements UserService {
         // El registro público siempre asigna el rol por defecto y la cuenta desbloqueada:
         // el rol nunca se acepta del cliente para impedir auto-asignarse privilegios.
         user.setLocked(false);
+        user.setFailedLoginAttempts(0);
 
         this.applyProfileValidation(user);
 
@@ -62,8 +65,9 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new SystemException("No está configurado el rol por defecto: " + defaultRoleCode));
             user.setRole(role);
 
+            // Mensaje genérico para no revelar qué documentos están registrados (anti-enumeración)
             if (userRepository.existsByDocumentNumber(user.getDocumentNumber()))
-                throw new BusinessException("Ya existe un usuario con el número de documento: " + user.getDocumentNumber());
+                throw new BusinessException("No fue posible completar el registro con los datos proporcionados");
 
             user.setCreatedAt(new Date());
             user.setPassword(encryption.encrypt(user.getPassword()));
@@ -232,22 +236,41 @@ public class UserServiceImpl implements UserService {
                         .build();
             }
 
+            // Bloqueo automático temporal por intentos fallidos
+            if (user.getLockedUntil() != null && user.getLockedUntil().after(new Date())) {
+                log.info("Intento de login de cuenta con bloqueo temporal: {}", LogMask.doc(user.getDocumentNumber()));
+                return LoginResponse.builder()
+                        .match(false)
+                        .detail("Cuenta bloqueada temporalmente por intentos fallidos. Intente más tarde")
+                        .build();
+            }
+
             boolean match = encryption.matches(loginDto.getPassword(), user.getPassword());
-            log.info("Resultado de validación de credenciales: {}", match ? "exitoso" : "fallido");
+            log.info("Resultado de validación de credenciales para {}: {}",
+                    LogMask.doc(user.getDocumentNumber()), match ? "exitoso" : "fallido");
 
             if (!match) {
+                registerFailedAttempt(user);
                 return LoginResponse.builder()
                         .match(false)
                         .detail("Credenciales incorrectas")
                         .build();
             }
 
+            // Bloqueo permanente por parte de un administrador
             if (Boolean.TRUE.equals(user.getLocked())) {
-                log.info("Intento de login de usuario bloqueado");
+                log.info("Intento de login de usuario bloqueado: {}", LogMask.doc(user.getDocumentNumber()));
                 return LoginResponse.builder()
                         .match(false)
                         .detail("El usuario se encuentra bloqueado. Contacte al administrador")
                         .build();
+            }
+
+            // Login correcto: se reinicia el contador de intentos fallidos
+            if (user.getFailedLoginAttempts() != null && user.getFailedLoginAttempts() != 0 || user.getLockedUntil() != null) {
+                user.setFailedLoginAttempts(0);
+                user.setLockedUntil(null);
+                userRepository.save(user);
             }
 
             String roleCode = user.getRole().getRoleCode();
@@ -267,6 +290,24 @@ public class UserServiceImpl implements UserService {
             log.error("Error al intentar validar login de usuario: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar validar login de usuario");
         }
+    }
+
+    /**
+     * Incrementa el contador de intentos fallidos y, al superar el umbral, bloquea
+     * la cuenta temporalmente. Complementa al límite por IP (rate limiting), que un
+     * atacante con varias IP podría esquivar.
+     */
+    private void registerFailedAttempt(User user) {
+        int attempts = (user.getFailedLoginAttempts() == null ? 0 : user.getFailedLoginAttempts()) + 1;
+
+        if (attempts >= maxFailedAttempts) {
+            user.setLockedUntil(new Date(System.currentTimeMillis() + lockoutMinutes * 60_000));
+            user.setFailedLoginAttempts(0);
+            log.info("Cuenta bloqueada temporalmente por intentos fallidos: {}", LogMask.doc(user.getDocumentNumber()));
+        } else {
+            user.setFailedLoginAttempts(attempts);
+        }
+        userRepository.save(user);
     }
 
     private void applyProfileValidation(User user) {

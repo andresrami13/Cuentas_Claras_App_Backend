@@ -10,8 +10,6 @@ public interface UserService {
 
     User createUser(User user);
 
-    User createUser(User user, String license, String specialityCode, String bloodType);
-
     User updateUser(String documentNumber, User user, String currentPassword);
 
     User setUserLocked(String documentNumber, boolean locked);

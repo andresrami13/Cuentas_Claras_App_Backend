@@ -8,6 +8,7 @@ import com.cuentasclaras.utils.Mapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class FinancialGoalController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Meta financiera creada exitosamente")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error de validación de negocio")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Error interno del servidor")
-    public ResponseEntity<ApiResponse<FinancialGoalDto>> createFinancialGoal(@RequestBody FinancialGoalDto financialGoalDto) {
+    public ResponseEntity<ApiResponse<FinancialGoalDto>> createFinancialGoal(@Valid @RequestBody FinancialGoalDto financialGoalDto) {
         FinancialGoalDto response = mapper.toFinancialGoalDto(
                 financialGoalService.createFinancialGoal(
                         mapper.toFinancialGoal(financialGoalDto),
@@ -46,7 +47,7 @@ public class FinancialGoalController {
     public ResponseEntity<ApiResponse<FinancialGoalDto>> updateFinancialGoal(
             @Parameter(description = "Identificador único de la meta financiera", example = "1")
             @PathVariable Long financialGoalId,
-            @RequestBody FinancialGoalDto financialGoalDto) {
+            @Valid @RequestBody FinancialGoalDto financialGoalDto) {
 
         FinancialGoalDto response = mapper.toFinancialGoalDto(
                 financialGoalService.updateFinancialGoal(financialGoalId, mapper.toFinancialGoal(financialGoalDto))

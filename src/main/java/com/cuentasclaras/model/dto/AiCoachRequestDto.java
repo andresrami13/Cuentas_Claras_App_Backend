@@ -2,6 +2,8 @@ package com.cuentasclaras.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -22,6 +24,8 @@ public class AiCoachRequestDto {
     @Schema(description = "Identificador de la meta financiera asociada a la solicitud", example = "1")
     private Long financialGoalId;
 
+    @NotBlank(message = "La pregunta es obligatoria")
+    @Size(max = 1000, message = "La pregunta no puede superar 1000 caracteres")
     @Schema(
             description = "Pregunta realizada por el usuario al coach financiero IA",
             example = "¿Qué debo hacer para cumplir mi meta de ahorro?"

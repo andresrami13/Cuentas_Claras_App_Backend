@@ -8,6 +8,7 @@ import com.cuentasclaras.utils.Mapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class DebtController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Deuda creada exitosamente")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error de validación de negocio")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Error interno del servidor")
-    public ResponseEntity<ApiResponse<DebtDto>> createDebt(@RequestBody DebtDto debtDto) {
+    public ResponseEntity<ApiResponse<DebtDto>> createDebt(@Valid @RequestBody DebtDto debtDto) {
         DebtDto response = mapper.toDebtDto(
                 debtService.createDebt(
                         mapper.toDebt(debtDto),
@@ -50,7 +51,7 @@ public class DebtController {
     public ResponseEntity<ApiResponse<DebtDto>> updateDebt(
             @Parameter(description = "Identificador único de la deuda", example = "1")
             @PathVariable Long debtId,
-            @RequestBody DebtDto debtDto) {
+            @Valid @RequestBody DebtDto debtDto) {
 
         DebtDto response = mapper.toDebtDto(debtService.updateDebt(debtId, mapper.toDebt(debtDto)));
 

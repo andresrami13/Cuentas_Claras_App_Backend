@@ -7,5 +7,10 @@ RUN gradle clean build --no-daemon -x test
 # Etapa de ejecución
 FROM eclipse-temurin:17-jre-jammy
 EXPOSE 8080
-COPY --from=build /home/gradle/src/build/libs/*-SNAPSHOT.jar app.jar
+
+# Ejecutar como usuario sin privilegios (no root) para contener el impacto de una intrusión
+RUN useradd -r -u 1001 appuser
+COPY --from=build /home/gradle/src/build/libs/*-SNAPSHOT.jar /app.jar
+USER appuser
+
 ENTRYPOINT ["java", "-jar", "/app.jar"]

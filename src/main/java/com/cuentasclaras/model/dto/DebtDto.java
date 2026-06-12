@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.cuentasclaras.model.enums.DebtStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -24,9 +25,11 @@ public class DebtDto {
     @Schema(description = "Número de documento del usuario dueño de la deuda", example = "1019109757")
     private String userDocumentNumber;
 
+    @Size(max = 150, message = "El acreedor no puede superar 150 caracteres")
     @Schema(description = "Entidad o persona acreedora de la deuda", example = "Banco ABC")
     private String creditor;
 
+    @Size(max = 500, message = "La descripción no puede superar 500 caracteres")
     @Schema(description = "Descripción de la deuda", example = "Crédito de libre inversión")
     private String description;
 

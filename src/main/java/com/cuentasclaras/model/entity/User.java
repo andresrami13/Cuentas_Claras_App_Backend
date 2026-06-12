@@ -48,6 +48,14 @@ public class User {
     @Column(name = "locked", nullable = false, length = 1)
     private Boolean locked;
 
+    // Contador de intentos de login fallidos consecutivos (bloqueo automático temporal)
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts;
+
+    // Si está en el futuro, la cuenta está bloqueada temporalmente hasta esa fecha
+    @Column(name = "locked_until")
+    private Date lockedUntil;
+
     @Column(name = "created_at", nullable = false)
     private Date createdAt;
 

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.cuentasclaras.model.enums.DocumentType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.util.Date;
@@ -18,21 +20,27 @@ import java.util.Date;
 @Schema(description = "DTO de usuario para creación, consulta y actualización")
 public class UserDto {
 
+    @Size(max = 12, message = "El número de documento no puede superar 12 caracteres")
     @Schema(description = "Número de documento del usuario", example = "1019109757")
     private String documentNumber;
 
     @Schema(description = "Tipo de documento del usuario", example = "CC")
     private DocumentType documentType;
 
+    @Size(max = 250, message = "El nombre no puede superar 250 caracteres")
     @Schema(description = "Nombres del usuario", example = "Diego Alexander")
     private String name;
 
+    @Size(max = 250, message = "El apellido no puede superar 250 caracteres")
     @Schema(description = "Apellidos del usuario", example = "Muñoz Reyes")
     private String lastName;
 
+    @Email(message = "El correo electrónico no tiene un formato válido")
+    @Size(max = 250, message = "El correo no puede superar 250 caracteres")
     @Schema(description = "Correo electrónico del usuario", example = "diego@email.com")
     private String email;
 
+    @Size(max = 12, message = "El número de celular no puede superar 12 caracteres")
     @Schema(description = "Número celular del usuario", example = "3103673285")
     private String celNumber;
 
@@ -45,6 +53,7 @@ public class UserDto {
     )
     private Date birthDate;
 
+    @Size(max = 72, message = "La contraseña no puede superar 72 caracteres")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Schema(
             description = "Contraseña del usuario. Solo se recibe en la petición y no se devuelve en la respuesta",
@@ -65,13 +74,4 @@ public class UserDto {
 
     @Schema(description = "Rol asignado al usuario")
     private RoleDto role;
-
-    @Schema(description = "Licencia profesional del doctor. Requerida cuando roleCode = DOC", example = "MED-123456")
-    private String license;
-
-    @Schema(description = "Codigo de especialidad. Requerido cuando roleCode = DOC", example = "CAR")
-    private String specialityCode;
-
-    @Schema(description = "Tipo de sangre del paciente. Usado cuando roleCode = PAC", example = "O+")
-    private String bloodType;
 }

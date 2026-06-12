@@ -8,6 +8,7 @@ import com.cuentasclaras.utils.Mapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,7 @@ public class AiCoachController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error de validación de negocio")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Error interno del servidor")
     public ResponseEntity<ApiResponse<AiCoachRequestDto>> requestFinancialAdvice(
-            @RequestBody AiCoachRequestDto aiCoachRequestDto) {
+            @Valid @RequestBody AiCoachRequestDto aiCoachRequestDto) {
 
         AiCoachRequestDto response = mapper.toAiCoachRequestDto(
                 aiCoachService.requestFinancialAdvice(

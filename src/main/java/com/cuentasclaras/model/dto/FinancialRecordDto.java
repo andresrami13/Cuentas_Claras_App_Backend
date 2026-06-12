@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.cuentasclaras.model.enums.FinancialRecordType;
 import com.cuentasclaras.model.enums.Periodicity;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -34,6 +35,7 @@ public class FinancialRecordDto {
     @Schema(description = "Identificador de la categoría de presupuesto. Obligatorio para egresos, opcional para ingresos.", example = "3")
     private Long budgetCategoryId;
 
+    @Size(max = 250, message = "La descripción no puede superar 250 caracteres")
     @Schema(description = "Descripción del movimiento financiero", example = "Salario mensual empresa ABC")
     private String description;
 

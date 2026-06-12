@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.cuentasclaras.model.enums.FinancialGoalStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -24,9 +25,11 @@ public class FinancialGoalDto {
     @Schema(description = "Número de documento del usuario dueño de la meta financiera", example = "1019109757")
     private String userDocumentNumber;
 
+    @Size(max = 150, message = "El nombre no puede superar 150 caracteres")
     @Schema(description = "Nombre corto de la meta financiera", example = "Comprar computador")
     private String name;
 
+    @Size(max = 500, message = "La descripción no puede superar 500 caracteres")
     @Schema(description = "Descripción detallada de la meta financiera", example = "Ahorrar para comprar un computador portátil")
     private String description;
 

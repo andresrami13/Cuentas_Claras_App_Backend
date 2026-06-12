@@ -7,6 +7,7 @@ import com.cuentasclaras.model.dto.UserDto;
 import com.cuentasclaras.service.UserService;
 import com.cuentasclaras.utils.Mapper;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +24,9 @@ public class UserController {
     private final Mapper mapper;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<UserDto>> createUser(@RequestBody UserDto userDto) {
+    public ResponseEntity<ApiResponse<UserDto>> createUser(@Valid @RequestBody UserDto userDto) {
 
-        UserDto response = mapper.toUserDto(userService.createUser(
-                mapper.toUser(userDto),
-                userDto.getLicense(),
-                userDto.getSpecialityCode(),
-                userDto.getBloodType()
-        ));
+        UserDto response = mapper.toUserDto(userService.createUser(mapper.toUser(userDto)));
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.of(
@@ -41,7 +37,7 @@ public class UserController {
     }
 
     @PutMapping("/{documentNumber}")
-    public ResponseEntity<ApiResponse<UserDto>> updateUser(@PathVariable String documentNumber, @RequestBody UserDto userDto) {
+    public ResponseEntity<ApiResponse<UserDto>> updateUser(@PathVariable String documentNumber, @Valid @RequestBody UserDto userDto) {
         UserDto response = mapper.toUserDto(userService.updateUser(
                 documentNumber,
                 mapper.toUser(userDto),
@@ -119,7 +115,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginDto loginDto) {
         LoginResponse loginResponse = userService.login(loginDto);
 
         return ResponseEntity.status(HttpStatus.OK)

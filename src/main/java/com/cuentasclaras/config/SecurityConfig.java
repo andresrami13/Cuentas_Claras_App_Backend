@@ -50,6 +50,16 @@ public class SecurityConfig {
                         // Todo lo demás requiere usuario autenticado
                         .anyRequest().authenticated()
                 )
+                .headers(headers -> headers
+                        // Evita que el navegador "adivine" tipos de contenido (anti-MIME-sniffing)
+                        .contentTypeOptions(c -> {})
+                        // Impide que la app se incruste en iframes (anti-clickjacking)
+                        .frameOptions(frame -> frame.deny())
+                        // Exige HTTPS en visitas futuras (efectivo cuando se sirve por HTTPS)
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000))
+                )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->
                                 writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED,

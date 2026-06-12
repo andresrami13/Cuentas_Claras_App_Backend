@@ -8,6 +8,7 @@ import com.cuentasclaras.utils.Mapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class FinancialRecordController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Ingreso creado exitosamente")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error de validación de negocio")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Error interno del servidor")
-    public ResponseEntity<ApiResponse<FinancialRecordDto>> createIncome(@RequestBody FinancialRecordDto financialRecordDto) {
+    public ResponseEntity<ApiResponse<FinancialRecordDto>> createIncome(@Valid @RequestBody FinancialRecordDto financialRecordDto) {
         financialRecordDto.setRecordType(FinancialRecordType.INCOME);
 
         FinancialRecordDto response = mapper.toFinancialRecordDto(
@@ -48,7 +49,7 @@ public class FinancialRecordController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Egreso creado exitosamente")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error de validación de negocio")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Error interno del servidor")
-    public ResponseEntity<ApiResponse<FinancialRecordDto>> createExpense(@RequestBody FinancialRecordDto financialRecordDto) {
+    public ResponseEntity<ApiResponse<FinancialRecordDto>> createExpense(@Valid @RequestBody FinancialRecordDto financialRecordDto) {
         financialRecordDto.setRecordType(FinancialRecordType.EXPENSE);
 
         FinancialRecordDto response = mapper.toFinancialRecordDto(
@@ -67,7 +68,7 @@ public class FinancialRecordController {
     public ResponseEntity<ApiResponse<FinancialRecordDto>> updateFinancialRecord(
             @Parameter(description = "Identificador único del movimiento financiero", example = "1")
             @PathVariable Long financialRecordId,
-            @RequestBody FinancialRecordDto financialRecordDto) {
+            @Valid @RequestBody FinancialRecordDto financialRecordDto) {
 
         FinancialRecordDto response = mapper.toFinancialRecordDto(
                 financialRecordService.updateFinancialRecord(financialRecordId, mapper.toFinancialRecord(financialRecordDto))

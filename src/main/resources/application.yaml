@@ -48,6 +48,10 @@ app:
       ai-coach:
         max-requests: ${RATE_LIMIT_AI_MAX:15}
         window-seconds: ${RATE_LIMIT_AI_WINDOW:3600}
+    login:
+      # Bloqueo temporal de la cuenta tras N contraseñas incorrectas consecutivas
+      max-failed-attempts: ${LOGIN_MAX_FAILED_ATTEMPTS:10}
+      lockout-minutes: ${LOGIN_LOCKOUT_MINUTES:15}
 
 # Documentación del API. Poner SWAGGER_ENABLED=false en producción.
 springdoc:
