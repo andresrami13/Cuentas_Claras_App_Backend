@@ -8,6 +8,7 @@ import com.cuentasclaras.model.entity.UserBudgetConfig;
 import com.cuentasclaras.repository.FixedBudgetCategoryRepository;
 import com.cuentasclaras.repository.UserBudgetConfigRepository;
 import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.UserBudgetConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
     private final UserBudgetConfigRepository userBudgetConfigRepository;
     private final FixedBudgetCategoryRepository fixedBudgetCategoryRepository;
     private final UserRepository userRepository;
+    private final SecurityUtils securityUtils;
 
     @Override
     public UserBudgetConfig saveConfig(UserBudgetConfig config, String userDocumentNumber) {
@@ -33,6 +35,8 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
 
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         if (config.getPaymentDay() == null || config.getPaymentDay() < 1 || config.getPaymentDay() > 31)
             throw new BusinessException("El día de pago debe estar entre 1 y 31");
@@ -93,6 +97,8 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
 
+        securityUtils.validateSelf(userDocumentNumber);
+
         try {
             return userBudgetConfigRepository.findByUser_DocumentNumberWithCategories(userDocumentNumber)
                     .orElseThrow(() -> new BusinessException("No existe configuración de presupuesto para el usuario: " + userDocumentNumber));
@@ -114,6 +120,8 @@ public class UserBudgetConfigServiceImpl implements UserBudgetConfigService {
 
         if (categoryId == null)
             throw new BusinessException("El identificador de la categoría es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             UserBudgetConfig config = userBudgetConfigRepository

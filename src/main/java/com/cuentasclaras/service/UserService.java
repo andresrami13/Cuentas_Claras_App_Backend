@@ -12,7 +12,11 @@ public interface UserService {
 
     User createUser(User user, String license, String specialityCode, String bloodType);
 
-    User updateUser(String documentNumber, User user);
+    User updateUser(String documentNumber, User user, String currentPassword);
+
+    User setUserLocked(String documentNumber, boolean locked);
+
+    User setUserRole(String documentNumber, String roleCode);
 
     void deleteUser(String documentNumber);
 

@@ -28,9 +28,6 @@ public class AiCoachRequestDto {
     )
     private String question;
 
-    @Schema(description = "Contexto financiero resumido que fue enviado al modelo IA")
-    private String financialContext;
-
     @Schema(description = "Respuesta generada por el coach financiero IA")
     private String aiResponse;
 

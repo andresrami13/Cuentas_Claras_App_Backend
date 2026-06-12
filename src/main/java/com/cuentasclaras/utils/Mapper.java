@@ -94,7 +94,6 @@ public class Mapper {
                 .email(user.getEmail())
                 .celNumber(user.getCelNumber())
                 .birthDate(user.getBirthDate())
-                .password(user.getPassword())
                 .locked(user.getLocked())
                 .build();
     }
@@ -247,7 +246,6 @@ public class Mapper {
                 .userDocumentNumber(aiCoachRequest.getUser().getDocumentNumber())
                 .financialGoalId(financialGoalId)
                 .question(aiCoachRequest.getQuestion())
-                .financialContext(aiCoachRequest.getFinancialContext())
                 .aiResponse(aiCoachRequest.getAiResponse())
                 .model(aiCoachRequest.getModel())
                 .build();
@@ -365,7 +363,6 @@ public class Mapper {
                 .user(user)
                 .financialGoal(financialGoal)
                 .question(aiCoachRequestDto.getQuestion())
-                .financialContext(aiCoachRequestDto.getFinancialContext())
                 .aiResponse(aiCoachRequestDto.getAiResponse())
                 .model(aiCoachRequestDto.getModel())
                 .build();

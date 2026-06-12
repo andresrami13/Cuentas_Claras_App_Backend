@@ -6,11 +6,15 @@ import com.cuentasclaras.model.dto.LoginDto;
 import com.cuentasclaras.model.dto.LoginResponse;
 import com.cuentasclaras.model.entity.*;
 import com.cuentasclaras.repository.*;
+import com.cuentasclaras.security.JwtService;
+import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.UserService;
+import com.cuentasclaras.utils.Constant;
 import com.cuentasclaras.utils.Encryption;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +30,11 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final Encryption encryption;
+    private final JwtService jwtService;
+    private final SecurityUtils securityUtils;
+
+    @Value("${app.security.default-role-code}")
+    private String defaultRoleCode;
 
     @Override
     public User createUser(@Valid User user) {
@@ -39,15 +48,18 @@ public class UserServiceImpl implements UserService {
         if (user.getDocumentNumber() == null || user.getDocumentNumber().isBlank())
             throw new BusinessException("El número de documento es obligatorio");
 
-        this.applyBussinessValidation(user);
+        // El registro público siempre asigna el rol por defecto y la cuenta desbloqueada:
+        // el rol nunca se acepta del cliente para impedir auto-asignarse privilegios.
+        user.setLocked(false);
+
+        this.applyProfileValidation(user);
 
         if (user.getPassword() == null)
             throw new BusinessException("La contraseña del usuario es obligatoria");
 
         try {
-            String roleCode = user.getRole().getRoleCode();
-            Role role = roleRepository.findById(roleCode)
-                .orElseThrow(() -> new BusinessException("No existe el rol con código: " + roleCode));
+            Role role = roleRepository.findById(defaultRoleCode)
+                .orElseThrow(() -> new SystemException("No está configurado el rol por defecto: " + defaultRoleCode));
             user.setRole(role);
 
             if (userRepository.existsByDocumentNumber(user.getDocumentNumber()))
@@ -58,7 +70,7 @@ public class UserServiceImpl implements UserService {
             log.info("Registrando usuario");
             user = userRepository.saveAndFlush(user);
 
-        } catch (BusinessException e) {
+        } catch (BusinessException | SystemException e) {
             throw e;
         } catch (Exception e) {
             log.error("Error al intentar registrar usuario: {}", e.getMessage(), e);
@@ -69,18 +81,30 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(String documentNumber, User user) {
+    public User updateUser(String documentNumber, User user, String currentPassword) {
 
         log.info("Inicio de validaciones de negocio para actualizar usuario");
-        this.applyBussinessValidation(user);
+
+        // Solo el dueño de la cuenta puede modificar su perfil
+        securityUtils.validateOwnership(documentNumber,
+                Constant.DONT_EXIST_USER_WITH_DOCUMENT_NUMBER + documentNumber);
+
+        this.applyProfileValidation(user);
 
         User existingUser = userRepository.findById(documentNumber)
                 .orElseThrow(() -> new BusinessException("No existe el usuario con número de documento: " + documentNumber));
 
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            if (currentPassword == null || currentPassword.isBlank())
+                throw new BusinessException("Para cambiar la contraseña debe enviar la contraseña actual");
+
+            if (!encryption.matches(currentPassword, existingUser.getPassword()))
+                throw new BusinessException("La contraseña actual no es correcta");
+        }
+
         try {
+            // No se permite cambiar documentNumber, rol ni estado de bloqueo por esta vía
             existingUser.setDocumentType(user.getDocumentType());
-            existingUser.setDocumentNumber(user.getDocumentNumber());
-            existingUser.setRole(user.getRole());
             existingUser.setName(user.getName());
             existingUser.setLastName(user.getLastName());
             existingUser.setEmail(user.getEmail());
@@ -89,7 +113,6 @@ public class UserServiceImpl implements UserService {
             if (user.getPassword() != null && !user.getPassword().isEmpty())
                 existingUser.setPassword(encryption.encrypt(user.getPassword()));
 
-            existingUser.setLocked(user.getLocked());
             existingUser.setUpdatedAt(new Date());
             log.info("Actualizando usuario");
             return userRepository.save(existingUser);
@@ -101,17 +124,58 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User setUserLocked(String documentNumber, boolean locked) {
+        User existingUser = userRepository.findById(documentNumber)
+                .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_USER_WITH_DOCUMENT_NUMBER + documentNumber));
+
+        try {
+            existingUser.setLocked(locked);
+            existingUser.setUpdatedAt(new Date());
+            log.info("Actualizando estado de bloqueo del usuario");
+            return userRepository.save(existingUser);
+        } catch (Exception e) {
+            log.error("Error al intentar actualizar estado de bloqueo: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar actualizar estado de bloqueo del usuario");
+        }
+    }
+
+    @Override
+    public User setUserRole(String documentNumber, String roleCode) {
+        if (roleCode == null || roleCode.isBlank())
+            throw new BusinessException("El código del rol es obligatorio");
+
+        User existingUser = userRepository.findById(documentNumber)
+                .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_USER_WITH_DOCUMENT_NUMBER + documentNumber));
+
+        Role role = roleRepository.findById(roleCode)
+                .orElseThrow(() -> new BusinessException("No existe el rol con código: " + roleCode));
+
+        try {
+            existingUser.setRole(role);
+            existingUser.setUpdatedAt(new Date());
+            log.info("Actualizando rol del usuario");
+            return userRepository.save(existingUser);
+        } catch (Exception e) {
+            log.error("Error al intentar actualizar rol del usuario: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar actualizar rol del usuario");
+        }
+    }
+
+    @Override
     public void deleteUser(String documentNumber) {
         log.info("Inicio de validaciones de negocio para eliminar usuario");
         if (documentNumber == null || documentNumber.isBlank()) {
             throw new BusinessException("El número de documento del usuario es obligatorio");
         }
 
+        securityUtils.validateOwnershipOrAdmin(documentNumber,
+                Constant.DONT_EXIST_USER_WITH_DOCUMENT_NUMBER + documentNumber);
+
         User existingUser = userRepository.findById(documentNumber)
                 .orElseThrow(() -> new BusinessException("No existe usuario registrado con el número de documento: " + documentNumber));
 
         try {
-            log.info("Eliminando usuario".concat(documentNumber));
+            log.info("Eliminando usuario");
             userRepository.delete(existingUser);
         } catch (Exception e) {
             log.error("Error al intentar eliminar usuario: {}", e.getMessage(), e);
@@ -134,14 +198,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public User findByDocumentNumber(String documentNumber) {
+        securityUtils.validateOwnershipOrAdmin(documentNumber,
+                Constant.DONT_EXIST_USER_WITH_DOCUMENT_NUMBER + documentNumber);
+
         try{
-            log.info("Obteniendo usuario con número de documento: ".concat(documentNumber));
+            log.info("Obteniendo usuario autenticado");
             return userRepository.findById(documentNumber).orElseThrow(() -> new BusinessException("No se ha encontrado un usuario con número de documento ".concat(documentNumber)));
         } catch (BusinessException e) {
             throw new BusinessException(e.getMessage());
         }catch (Exception e) {
-            log.error("Error al intentar consultar usuario con número de documento: ".concat(documentNumber));
-            throw new SystemException("Error al intentar consultar usuario con número de documetno ".concat(documentNumber));
+            log.error("Error al intentar consultar usuario", e);
+            throw new SystemException("Error al intentar consultar usuario");
         }
     }
 
@@ -167,22 +234,44 @@ public class UserServiceImpl implements UserService {
 
             boolean match = encryption.matches(loginDto.getPassword(), user.getPassword());
             log.info("Resultado de validación de credenciales: {}", match ? "exitoso" : "fallido");
-            return LoginResponse.builder().match(match).detail(match ? "Login correcto" : "Credenciales incorrectas").build();
+
+            if (!match) {
+                return LoginResponse.builder()
+                        .match(false)
+                        .detail("Credenciales incorrectas")
+                        .build();
+            }
+
+            if (Boolean.TRUE.equals(user.getLocked())) {
+                log.info("Intento de login de usuario bloqueado");
+                return LoginResponse.builder()
+                        .match(false)
+                        .detail("El usuario se encuentra bloqueado. Contacte al administrador")
+                        .build();
+            }
+
+            String roleCode = user.getRole().getRoleCode();
+            String token = jwtService.generateToken(user.getDocumentNumber(), roleCode);
+
+            return LoginResponse.builder()
+                    .match(true)
+                    .detail("Login correcto")
+                    .token(token)
+                    .tokenType("Bearer")
+                    .expiresIn(jwtService.getExpirationSeconds())
+                    .documentNumber(user.getDocumentNumber())
+                    .name(user.getName())
+                    .roleCode(roleCode)
+                    .build();
         } catch (Exception e) {
             log.error("Error al intentar validar login de usuario: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar validar login de usuario");
         }
     }
 
-    private void applyBussinessValidation(User user) {
+    private void applyProfileValidation(User user) {
         if (user.getDocumentType() == null)
             throw new BusinessException("El tipo de documento es obligatorio");
-
-        if (user.getRole() == null)
-            throw new BusinessException("El rol del usuario es obligatorio");
-
-        if (user.getRole().getRoleCode() == null || user.getRole().getRoleCode().isBlank())
-            throw new BusinessException("El codigo del rol del usuario es obligatorio");
 
         if (user.getName() == null || user.getName().isBlank())
             throw new BusinessException("El nombre del usuario es obligatorio");
@@ -198,9 +287,6 @@ public class UserServiceImpl implements UserService {
 
         if (user.getBirthDate() == null)
             throw new BusinessException("La fecha de naciemiento del usuario es obligatoria");
-
-        if (user.getLocked() == null)
-            throw new BusinessException("Es necesario indicar si el usuario está o no bloqueado, parámetro: locked");
     }
 
 }

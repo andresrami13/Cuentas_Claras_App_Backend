@@ -14,6 +14,7 @@ import com.cuentasclaras.repository.DebtRepository;
 import com.cuentasclaras.repository.FinancialGoalRepository;
 import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.AiCoachService;
 import com.cuentasclaras.service.GeminiClientService;
 import com.cuentasclaras.utils.Constant;
@@ -44,6 +45,7 @@ public class AiCoachServiceImpl implements AiCoachService {
     private final FinancialRecordRepository financialRecordRepository;
     private final DebtRepository debtRepository;
     private final GeminiClientService geminiClientService;
+    private final SecurityUtils securityUtils;
 
     @Value("${gemini.model}")
     private String geminiModel;
@@ -55,6 +57,8 @@ public class AiCoachServiceImpl implements AiCoachService {
 
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException(Constant.USER_DOCUMENT_NUMBER_REQUIRED);
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         if (financialGoalId == null)
             throw new BusinessException("El identificador de la meta financiera es obligatorio");
@@ -125,8 +129,13 @@ public class AiCoachServiceImpl implements AiCoachService {
 
         try {
             log.info("Consultando solicitud al coach IA con id: {}", aiCoachRequestId);
-            return aiCoachRequestRepository.findById(aiCoachRequestId)
+            AiCoachRequest aiCoachRequest = aiCoachRequestRepository.findById(aiCoachRequestId)
                     .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_AI_COACH_REQUEST_WITH_ID.concat(String.valueOf(aiCoachRequestId))));
+
+            securityUtils.validateOwnership(aiCoachRequest.getUser().getDocumentNumber(),
+                    Constant.DONT_EXIST_AI_COACH_REQUEST_WITH_ID + aiCoachRequestId);
+
+            return aiCoachRequest;
 
         } catch (BusinessException e) {
             throw e;
@@ -141,6 +150,8 @@ public class AiCoachServiceImpl implements AiCoachService {
     public List<AiCoachRequest> getAiCoachRequestsByUser(String userDocumentNumber) {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException(Constant.USER_DOCUMENT_NUMBER_REQUIRED);
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             log.info("Consultando solicitudes al coach IA del usuario: {}", userDocumentNumber);

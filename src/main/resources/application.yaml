@@ -25,6 +25,18 @@ gemini:
     key: ${GEMINI_API_KEY:sin-key}
   model: ${GEMINI_MODEL:gemini-2.5-flash}
 
+app:
+  security:
+    jwt:
+      # Secreto HMAC de mínimo 32 caracteres. Si no se define, se genera uno
+      # aleatorio al arrancar (los tokens dejan de ser válidos en cada reinicio).
+      secret: ${JWT_SECRET:}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+    # Rol asignado a todo usuario que se registra por el endpoint público.
+    default-role-code: ${DEFAULT_ROLE_CODE:USR}
+    # Rol con privilegios de administración (gestión de usuarios, roles y permisos).
+    admin-role-code: ${ADMIN_ROLE_CODE:ADM}
+
 logging:
   level:
     org.hibernate.SQL: DEBUG

@@ -9,6 +9,7 @@ import com.cuentasclaras.model.enums.FinancialRecordType;
 import com.cuentasclaras.repository.BudgetCategoryRepository;
 import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.FinancialRecordService;
 import com.cuentasclaras.utils.Constant;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     private final FinancialRecordRepository financialRecordRepository;
     private final UserRepository userRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
+    private final SecurityUtils securityUtils;
 
     @Override
     public FinancialRecord createFinancialRecord(FinancialRecord financialRecord, String userDocumentNumber) {
@@ -37,6 +39,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         this.applyBussinessValidation(financialRecord);
 
@@ -84,6 +88,9 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         FinancialRecord existingFinancialRecord = financialRecordRepository.findById(financialRecordId)
                 .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_FINANCIAL_MOVEMENT_WITH_ID + financialRecordId));
 
+        securityUtils.validateOwnership(existingFinancialRecord.getUser().getDocumentNumber(),
+                Constant.DONT_EXIST_FINANCIAL_MOVEMENT_WITH_ID + financialRecordId);
+
         try {
             existingFinancialRecord.setRecordType(financialRecord.getRecordType());
             existingFinancialRecord.setBudgetCategory(financialRecord.getBudgetCategory());
@@ -118,6 +125,9 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         FinancialRecord existingFinancialRecord = financialRecordRepository.findById(financialRecordId)
                 .orElseThrow(() -> new BusinessException("No existe el movimiento financiero con id: " + financialRecordId));
 
+        securityUtils.validateOwnership(existingFinancialRecord.getUser().getDocumentNumber(),
+                Constant.DONT_EXIST_FINANCIAL_MOVEMENT_WITH_ID + financialRecordId);
+
         try {
             log.info("Eliminando movimiento financiero con id: {}", financialRecordId);
             financialRecordRepository.delete(existingFinancialRecord);
@@ -136,8 +146,13 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
         try {
             log.info("Consultando movimiento financiero con id: {}", financialRecordId);
-            return financialRecordRepository.findById(financialRecordId)
+            FinancialRecord financialRecord = financialRecordRepository.findById(financialRecordId)
                     .orElseThrow(() -> new BusinessException("No existe el movimiento financiero con id: " + financialRecordId));
+
+            securityUtils.validateOwnership(financialRecord.getUser().getDocumentNumber(),
+                    Constant.DONT_EXIST_FINANCIAL_MOVEMENT_WITH_ID + financialRecordId);
+
+            return financialRecord;
 
         } catch (BusinessException e) {
             throw e;
@@ -152,6 +167,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     public List<FinancialRecord> getFinancialRecordsByUser(String userDocumentNumber) {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             log.info("Consultando movimientos financieros del usuario: {}", userDocumentNumber);
@@ -172,6 +189,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         if (recordType == null)
             throw new BusinessException("El tipo de movimiento financiero es obligatorio");
 
+        securityUtils.validateSelf(userDocumentNumber);
+
         try {
             log.info("Consultando movimientos financieros del usuario: {} por tipo: {}", userDocumentNumber, recordType);
             return financialRecordRepository.findByUser_DocumentNumberAndRecordType(userDocumentNumber, recordType);
@@ -187,6 +206,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     public List<FinancialRecord> getRecurringFinancialRecordsByUser(String userDocumentNumber) {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             log.info("Consultando movimientos financieros recurrentes del usuario: {}", userDocumentNumber);

@@ -10,6 +10,7 @@ import com.cuentasclaras.model.enums.Periodicity;
 import com.cuentasclaras.repository.BudgetCategoryRepository;
 import com.cuentasclaras.repository.BudgetCycleRepository;
 import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.BudgetCycleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
     private final BudgetCycleRepository budgetCycleRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
     private final UserRepository userRepository;
+    private final SecurityUtils securityUtils;
 
     @Override
     public BudgetCycle createBudgetCycle(BudgetCycle budgetCycle, String userDocumentNumber) {
@@ -36,6 +38,8 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
 
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         if (budgetCycle.getPaymentDay() == null || budgetCycle.getPaymentDay() < 1 || budgetCycle.getPaymentDay() > 31)
             throw new BusinessException("El día de pago debe estar entre 1 y 31");
@@ -81,6 +85,8 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
 
+        securityUtils.validateSelf(userDocumentNumber);
+
         try {
             return budgetCycleRepository.findByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE)
                     .orElseThrow(() -> new BusinessException("No existe ciclo de presupuesto activo para el usuario: " + userDocumentNumber));
@@ -109,6 +115,9 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         try {
             BudgetCycle cycle = budgetCycleRepository.findById(cycleId)
                     .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            securityUtils.validateOwnership(cycle.getUser().getDocumentNumber(),
+                    "No existe el ciclo con id: " + cycleId);
 
             if (!BudgetCycleStatus.ACTIVE.equals(cycle.getStatus()))
                 throw new BusinessException("Solo se pueden agregar categorías a un ciclo activo");
@@ -143,6 +152,9 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         try {
             BudgetCycle cycle = budgetCycleRepository.findById(cycleId)
                     .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            securityUtils.validateOwnership(cycle.getUser().getDocumentNumber(),
+                    "No existe el ciclo con id: " + cycleId);
 
             if (!BudgetCycleStatus.ACTIVE.equals(cycle.getStatus()))
                 throw new BusinessException("Solo se pueden modificar categorías de un ciclo activo");
@@ -185,6 +197,9 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
         try {
             BudgetCycle cycle = budgetCycleRepository.findById(cycleId)
                     .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            securityUtils.validateOwnership(cycle.getUser().getDocumentNumber(),
+                    "No existe el ciclo con id: " + cycleId);
 
             if (!BudgetCycleStatus.ACTIVE.equals(cycle.getStatus()))
                 throw new BusinessException("Solo se pueden eliminar categorías de un ciclo activo");

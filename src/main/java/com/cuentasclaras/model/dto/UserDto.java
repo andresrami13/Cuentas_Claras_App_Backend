@@ -53,6 +53,13 @@ public class UserDto {
     )
     private String password;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Schema(
+            description = "Contraseña actual del usuario. Requerida únicamente cuando se quiere cambiar la contraseña",
+            accessMode = Schema.AccessMode.WRITE_ONLY
+    )
+    private String currentPassword;
+
     @Schema(description = "Indica si el usuario se encuentra bloqueado", example = "false")
     private Boolean locked;
 

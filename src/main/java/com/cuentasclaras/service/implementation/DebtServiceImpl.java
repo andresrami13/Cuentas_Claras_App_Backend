@@ -7,6 +7,7 @@ import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.enums.DebtStatus;
 import com.cuentasclaras.repository.DebtRepository;
 import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.DebtService;
 import com.cuentasclaras.utils.Constant;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class DebtServiceImpl implements DebtService {
 
     private final DebtRepository debtRepository;
     private final UserRepository userRepository;
+    private final SecurityUtils securityUtils;
 
     @Override
     public Debt createDebt(Debt debt, String userDocumentNumber) {
@@ -34,6 +36,8 @@ public class DebtServiceImpl implements DebtService {
 
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         this.applyBussinessValidation(debt);
 
@@ -74,6 +78,9 @@ public class DebtServiceImpl implements DebtService {
         Debt existingDebt = debtRepository.findById(debtId)
                 .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_DEBT_WITH_ID + debtId));
 
+        securityUtils.validateOwnership(existingDebt.getUser().getDocumentNumber(),
+                Constant.DONT_EXIST_DEBT_WITH_ID + debtId);
+
         try {
             existingDebt.setCreditor(debt.getCreditor());
             existingDebt.setDescription(debt.getDescription());
@@ -106,6 +113,9 @@ public class DebtServiceImpl implements DebtService {
         Debt existingDebt = debtRepository.findById(debtId)
                 .orElseThrow(() -> new BusinessException("No existe la deuda con id: " + debtId));
 
+        securityUtils.validateOwnership(existingDebt.getUser().getDocumentNumber(),
+                Constant.DONT_EXIST_DEBT_WITH_ID + debtId);
+
         try {
             log.info("Eliminando deuda con id: {}", debtId);
             debtRepository.delete(existingDebt);
@@ -124,8 +134,13 @@ public class DebtServiceImpl implements DebtService {
 
         try {
             log.info("Consultando deuda con id: {}", debtId);
-            return debtRepository.findById(debtId)
+            Debt debt = debtRepository.findById(debtId)
                     .orElseThrow(() -> new BusinessException("No existe la deuda con id: " + debtId));
+
+            securityUtils.validateOwnership(debt.getUser().getDocumentNumber(),
+                    Constant.DONT_EXIST_DEBT_WITH_ID + debtId);
+
+            return debt;
 
         } catch (BusinessException e) {
             throw e;
@@ -140,6 +155,8 @@ public class DebtServiceImpl implements DebtService {
     public List<Debt> getDebtsByUser(String userDocumentNumber) {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException("El número de documento del usuario es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             log.info("Consultando deudas del usuario: {}", userDocumentNumber);
@@ -159,6 +176,8 @@ public class DebtServiceImpl implements DebtService {
 
         if (status == null)
             throw new BusinessException("El estado de la deuda es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             log.info("Consultando deudas del usuario: {} por estado: {}", userDocumentNumber, status);

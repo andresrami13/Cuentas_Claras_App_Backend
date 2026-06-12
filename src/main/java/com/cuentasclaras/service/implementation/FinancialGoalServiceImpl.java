@@ -8,6 +8,7 @@ import com.cuentasclaras.model.enums.FinancialGoalStatus;
 import com.cuentasclaras.repository.AiCoachRequestRepository;
 import com.cuentasclaras.repository.FinancialGoalRepository;
 import com.cuentasclaras.repository.UserRepository;
+import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.FinancialGoalService;
 import com.cuentasclaras.utils.Constant;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
     private final FinancialGoalRepository financialGoalRepository;
     private final UserRepository userRepository;
     private final AiCoachRequestRepository aiCoachRequestRepository;
+    private final SecurityUtils securityUtils;
 
     @Override
     public FinancialGoal createFinancialGoal(FinancialGoal financialGoal, String userDocumentNumber) {
@@ -36,6 +38,8 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
 
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException(Constant.USER_DOCUMENT_NUMBER_REQUIRED);
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         this.applyBussinessValidation(financialGoal);
 
@@ -76,6 +80,9 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
         FinancialGoal existingFinancialGoal = financialGoalRepository.findById(financialGoalId)
                 .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_FINANCIAL_GOAL_WITH_ID.concat(String.valueOf(financialGoalId))));
 
+        securityUtils.validateOwnership(existingFinancialGoal.getUser().getDocumentNumber(),
+                Constant.DONT_EXIST_FINANCIAL_GOAL_WITH_ID + financialGoalId);
+
         try {
             existingFinancialGoal.setName(financialGoal.getName());
             existingFinancialGoal.setDescription(financialGoal.getDescription());
@@ -108,6 +115,9 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
         FinancialGoal existingFinancialGoal = financialGoalRepository.findById(financialGoalId)
                 .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_FINANCIAL_GOAL_WITH_ID.concat(String.valueOf(financialGoalId))));
 
+        securityUtils.validateOwnership(existingFinancialGoal.getUser().getDocumentNumber(),
+                Constant.DONT_EXIST_FINANCIAL_GOAL_WITH_ID + financialGoalId);
+
         try {
             log.info("Eliminando conversaciones del coach IA asociadas a la meta: {}", financialGoalId);
             aiCoachRequestRepository.deleteByFinancialGoal_FinancialGoalId(financialGoalId);
@@ -129,8 +139,13 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
 
         try {
             log.info("Consultando meta financiera con id: {}", financialGoalId);
-            return financialGoalRepository.findById(financialGoalId)
+            FinancialGoal financialGoal = financialGoalRepository.findById(financialGoalId)
                     .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_FINANCIAL_GOAL_WITH_ID.concat(String.valueOf(financialGoalId))));
+
+            securityUtils.validateOwnership(financialGoal.getUser().getDocumentNumber(),
+                    Constant.DONT_EXIST_FINANCIAL_GOAL_WITH_ID + financialGoalId);
+
+            return financialGoal;
 
         } catch (BusinessException e) {
             throw e;
@@ -145,6 +160,8 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
     public List<FinancialGoal> getFinancialGoalsByUser(String userDocumentNumber) {
         if (userDocumentNumber == null || userDocumentNumber.isBlank())
             throw new BusinessException(Constant.USER_DOCUMENT_NUMBER_REQUIRED);
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             log.info("Consultando metas financieras del usuario: {}", userDocumentNumber);
@@ -164,6 +181,8 @@ public class FinancialGoalServiceImpl implements FinancialGoalService {
 
         if (status == null)
             throw new BusinessException("El estado de la meta financiera es obligatorio");
+
+        securityUtils.validateSelf(userDocumentNumber);
 
         try {
             log.info("Consultando metas financieras del usuario: {} por estado: {}", userDocumentNumber, status);

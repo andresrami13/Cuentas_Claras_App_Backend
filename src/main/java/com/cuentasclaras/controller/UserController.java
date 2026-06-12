@@ -42,12 +42,42 @@ public class UserController {
 
     @PutMapping("/{documentNumber}")
     public ResponseEntity<ApiResponse<UserDto>> updateUser(@PathVariable String documentNumber, @RequestBody UserDto userDto) {
-        UserDto response = mapper.toUserDto(userService.updateUser(documentNumber, mapper.toUser(userDto)));
+        UserDto response = mapper.toUserDto(userService.updateUser(
+                documentNumber,
+                mapper.toUser(userDto),
+                userDto.getCurrentPassword()
+        ));
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.of(
                         HttpStatus.OK.value(),
                         "Usuario actualizado exitosamente",
+                        response
+                ));
+    }
+
+    @PatchMapping("/{documentNumber}/lock")
+    public ResponseEntity<ApiResponse<UserDto>> setUserLocked(@PathVariable String documentNumber,
+                                                              @RequestParam boolean locked) {
+        UserDto response = mapper.toUserDto(userService.setUserLocked(documentNumber, locked));
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        locked ? "Usuario bloqueado exitosamente" : "Usuario desbloqueado exitosamente",
+                        response
+                ));
+    }
+
+    @PatchMapping("/{documentNumber}/role")
+    public ResponseEntity<ApiResponse<UserDto>> setUserRole(@PathVariable String documentNumber,
+                                                            @RequestParam String roleCode) {
+        UserDto response = mapper.toUserDto(userService.setUserRole(documentNumber, roleCode));
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        "Rol del usuario actualizado exitosamente",
                         response
                 ));
     }
