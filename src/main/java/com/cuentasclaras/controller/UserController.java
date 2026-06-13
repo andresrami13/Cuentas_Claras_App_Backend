@@ -1,6 +1,8 @@
 package com.cuentasclaras.controller;
 
 import com.cuentasclaras.model.dto.ApiResponse;
+import com.cuentasclaras.model.dto.GoogleLoginDto;
+import com.cuentasclaras.model.dto.GoogleRegisterDto;
 import com.cuentasclaras.model.dto.LoginDto;
 import com.cuentasclaras.model.dto.LoginResponse;
 import com.cuentasclaras.model.dto.UserDto;
@@ -122,6 +124,30 @@ public class UserController {
                 .body(ApiResponse.of(
                         HttpStatus.OK.value(),
                         "Login procesado correctamente",
+                        loginResponse
+                ));
+    }
+
+    @PostMapping("/login/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogle(@Valid @RequestBody GoogleLoginDto googleLoginDto) {
+        LoginResponse loginResponse = userService.loginWithGoogle(googleLoginDto);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(
+                        HttpStatus.OK.value(),
+                        "Login con Google procesado correctamente",
+                        loginResponse
+                ));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> registerWithGoogle(@Valid @RequestBody GoogleRegisterDto googleRegisterDto) {
+        LoginResponse loginResponse = userService.registerWithGoogle(googleRegisterDto);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.of(
+                        HttpStatus.CREATED.value(),
+                        "Usuario registrado con Google exitosamente",
                         loginResponse
                 ));
     }

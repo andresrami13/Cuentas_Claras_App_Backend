@@ -37,8 +37,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Públicos: login y registro
+                        // Públicos: login y registro (local y con Google)
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/login/google").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/google").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()
                         // Documentación del API (restringir o apagar en producción vía springdoc)
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()

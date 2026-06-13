@@ -44,8 +44,15 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     @Value("${app.security.rate-limit.ai-coach.window-seconds:3600}")
     private long aiCoachWindowSeconds;
 
+    @Value("${app.security.rate-limit.google.max-requests:10}")
+    private int googleMaxRequests;
+
+    @Value("${app.security.rate-limit.google.window-seconds:60}")
+    private long googleWindowSeconds;
+
     private final Map<String, long[]> loginCounters = new ConcurrentHashMap<>();
     private final Map<String, long[]> aiCoachCounters = new ConcurrentHashMap<>();
+    private final Map<String, long[]> googleCounters = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -58,6 +65,13 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         if (isPost && "/users/login".equals(path)) {
             if (!allow(loginCounters, clientIp(request), loginMaxRequests, loginWindowSeconds * 1000)) {
                 tooManyRequests(response, "Demasiados intentos de inicio de sesión. Intente de nuevo en unos minutos.");
+                return;
+            }
+        } else if (isPost && ("/users/login/google".equals(path) || "/users/google".equals(path))) {
+            // No hay contraseña que adivinar, pero se limita para evitar abuso de la verificación
+            // de tokens y la creación masiva de cuentas.
+            if (!allow(googleCounters, clientIp(request), googleMaxRequests, googleWindowSeconds * 1000)) {
+                tooManyRequests(response, "Demasiadas solicitudes de acceso con Google. Intente de nuevo en unos minutos.");
                 return;
             }
         } else if (isPost && "/ai-coach/advice".equals(path)) {

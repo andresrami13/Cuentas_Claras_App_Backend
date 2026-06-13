@@ -1,5 +1,6 @@
 package com.cuentasclaras.model.entity;
 
+import com.cuentasclaras.model.enums.AuthProvider;
 import com.cuentasclaras.model.enums.DocumentType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,8 +43,18 @@ public class User {
     @Column(name = "birth_date")
     private Date birthDate;
 
-    @Column(name = "password", nullable = false, length = 255)
+    // Nulo para cuentas que solo entran con Google (no tienen contraseña local)
+    @Column(name = "password", length = 255)
     private String password;
+
+    // Cómo se autentica la cuenta. LOCAL por defecto para los registros tradicionales.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 10)
+    private AuthProvider authProvider;
+
+    // Identificador único y estable del usuario en Google (claim "sub"). Nulo en cuentas LOCAL.
+    @Column(name = "google_sub", length = 64)
+    private String googleSub;
 
     @Column(name = "locked", nullable = false, length = 1)
     private Boolean locked;

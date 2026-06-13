@@ -2,10 +2,15 @@ package com.cuentasclaras.service.implementation;
 
 import com.cuentasclaras.exception.BusinessException;
 import com.cuentasclaras.exception.SystemException;
+import com.cuentasclaras.model.dto.GoogleLoginDto;
+import com.cuentasclaras.model.dto.GoogleRegisterDto;
 import com.cuentasclaras.model.dto.LoginDto;
 import com.cuentasclaras.model.dto.LoginResponse;
 import com.cuentasclaras.model.entity.*;
+import com.cuentasclaras.model.enums.AuthProvider;
 import com.cuentasclaras.repository.*;
+import com.cuentasclaras.security.GoogleTokenVerifier;
+import com.cuentasclaras.security.GoogleUserInfo;
 import com.cuentasclaras.security.JwtService;
 import com.cuentasclaras.security.SecurityUtils;
 import com.cuentasclaras.service.UserService;
@@ -33,6 +38,7 @@ public class UserServiceImpl implements UserService {
     private final Encryption encryption;
     private final JwtService jwtService;
     private final SecurityUtils securityUtils;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     @Value("${app.security.default-role-code}")
     private String defaultRoleCode;
@@ -54,6 +60,7 @@ public class UserServiceImpl implements UserService {
         // el rol nunca se acepta del cliente para impedir auto-asignarse privilegios.
         user.setLocked(false);
         user.setFailedLoginAttempts(0);
+        user.setAuthProvider(AuthProvider.LOCAL);
 
         this.applyProfileValidation(user);
 
@@ -99,6 +106,11 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BusinessException("No existe el usuario con número de documento: " + documentNumber));
 
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            // Las cuentas que entran con Google no tienen contraseña local. Definir cómo se
+            // vincula una contraseña a una cuenta Google queda fuera del alcance de la fase 1.
+            if (existingUser.getAuthProvider() == AuthProvider.GOOGLE)
+                throw new BusinessException("Esta cuenta ingresa con Google; no es posible establecer una contraseña");
+
             if (currentPassword == null || currentPassword.isBlank())
                 throw new BusinessException("Para cambiar la contraseña debe enviar la contraseña actual");
 
@@ -236,6 +248,16 @@ public class UserServiceImpl implements UserService {
                         .build();
             }
 
+            // Las cuentas que entran con Google no tienen contraseña local: se evita validar
+            // credenciales contra un hash inexistente y se orienta al usuario al botón de Google.
+            if (user.getAuthProvider() == AuthProvider.GOOGLE) {
+                log.info("Intento de login con contraseña sobre cuenta Google: {}", LogMask.doc(user.getDocumentNumber()));
+                return LoginResponse.builder()
+                        .match(false)
+                        .detail("Esta cuenta ingresa con Google")
+                        .build();
+            }
+
             // Bloqueo automático temporal por intentos fallidos
             if (user.getLockedUntil() != null && user.getLockedUntil().after(new Date())) {
                 log.info("Intento de login de cuenta con bloqueo temporal: {}", LogMask.doc(user.getDocumentNumber()));
@@ -290,6 +312,158 @@ public class UserServiceImpl implements UserService {
             log.error("Error al intentar validar login de usuario: {}", e.getMessage(), e);
             throw new SystemException("Error al intentar validar login de usuario");
         }
+    }
+
+    @Override
+    public LoginResponse loginWithGoogle(GoogleLoginDto googleLoginDto) {
+        try {
+            GoogleUserInfo info = verifyGoogle(googleLoginDto != null ? googleLoginDto.getGoogleToken() : null);
+
+            User user = userRepository.findByEmail(info.email()).orElse(null);
+
+            // Caso B: el correo no existe todavía. No se crea la cuenta aquí porque faltan datos
+            // que Google no entrega (documento, celular, fecha de nacimiento). El frontend
+            // muestra "completa tu perfil" y luego llama al registro con Google.
+            if (user == null) {
+                log.info("Login con Google de correo no registrado: registro incompleto");
+                return LoginResponse.builder()
+                        .match(false)
+                        .isNewUser(true)
+                        .detail("REGISTRO_INCOMPLETO")
+                        .email(info.email())
+                        .name(info.givenName())
+                        .lastName(info.familyName())
+                        .build();
+            }
+
+            // Caso A: el correo ya existe. Se respetan los mismos bloqueos que el login normal,
+            // aunque entre por Google. Las cuentas LOCAL se dejan entrar sin alterar su provider
+            // (conservan su login con contraseña): el correo viene verificado por Google.
+            LoginResponse blocked = lockResponseOrNull(user);
+            if (blocked != null) return blocked;
+
+            log.info("Login con Google exitoso para {}", LogMask.doc(user.getDocumentNumber()));
+            return buildSuccessLogin(user);
+        } catch (BusinessException | SystemException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar validar login con Google: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar validar login con Google");
+        }
+    }
+
+    @Override
+    public LoginResponse registerWithGoogle(GoogleRegisterDto dto) {
+        if (dto == null)
+            throw new BusinessException("No se recibieron datos para el registro con Google");
+
+        GoogleUserInfo info = verifyGoogle(dto.getGoogleToken());
+
+        if (dto.getDocumentNumber() == null || dto.getDocumentNumber().isBlank())
+            throw new BusinessException("El número de documento es obligatorio");
+        if (dto.getDocumentType() == null)
+            throw new BusinessException("El tipo de documento es obligatorio");
+        if (dto.getCelNumber() == null || dto.getCelNumber().isBlank())
+            throw new BusinessException("El número de celular del usuario es obligatorio");
+        if (dto.getBirthDate() == null)
+            throw new BusinessException("La fecha de nacimiento del usuario es obligatoria");
+
+        try {
+            Role role = roleRepository.findById(defaultRoleCode)
+                    .orElseThrow(() -> new SystemException("No está configurado el rol por defecto: " + defaultRoleCode));
+
+            // Si el correo ya existe, no es un registro: el usuario debe iniciar sesión con Google.
+            if (userRepository.existsByEmail(info.email()))
+                throw new BusinessException("Ya existe una cuenta con este correo. Inicia sesión con Google");
+
+            // Mensaje genérico para no revelar qué documentos están registrados (anti-enumeración)
+            if (userRepository.existsByDocumentNumber(dto.getDocumentNumber()))
+                throw new BusinessException("No fue posible completar el registro con los datos proporcionados");
+
+            // Nombre, apellido y correo se toman del token verificado, no del cliente.
+            User user = User.builder()
+                    .documentNumber(dto.getDocumentNumber())
+                    .documentType(dto.getDocumentType())
+                    .role(role)
+                    .name(info.givenName())
+                    .lastName(info.familyName())
+                    .email(info.email())
+                    .celNumber(dto.getCelNumber())
+                    .birthDate(dto.getBirthDate())
+                    .password(null)
+                    .authProvider(AuthProvider.GOOGLE)
+                    .googleSub(info.sub())
+                    .locked(false)
+                    .failedLoginAttempts(0)
+                    .createdAt(new Date())
+                    .build();
+
+            log.info("Registrando usuario con Google");
+            user = userRepository.saveAndFlush(user);
+
+            return buildSuccessLogin(user);
+        } catch (BusinessException | SystemException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar registrar usuario con Google: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar registrar usuario con Google");
+        }
+    }
+
+    /**
+     * Verifica el ID token de Google y exige que el correo esté verificado.
+     * Devuelve los datos del usuario tomados del token firmado.
+     */
+    private GoogleUserInfo verifyGoogle(String idToken) {
+        GoogleUserInfo info = googleTokenVerifier.verify(idToken);
+        if (info.email() == null || info.email().isBlank())
+            throw new BusinessException("El token de Google no contiene un correo");
+        if (!info.emailVerified())
+            throw new BusinessException("El correo de la cuenta de Google no está verificado");
+        return info;
+    }
+
+    /**
+     * Devuelve una respuesta de bloqueo si la cuenta está bloqueada (temporal por intentos
+     * fallidos o permanente por un administrador), o null si puede continuar. Centraliza las
+     * verificaciones de bloqueo para que apliquen igual al login normal y al login con Google.
+     */
+    private LoginResponse lockResponseOrNull(User user) {
+        if (user.getLockedUntil() != null && user.getLockedUntil().after(new Date())) {
+            log.info("Acceso bloqueado temporalmente por intentos fallidos: {}", LogMask.doc(user.getDocumentNumber()));
+            return LoginResponse.builder()
+                    .match(false)
+                    .detail("Cuenta bloqueada temporalmente por intentos fallidos. Intente más tarde")
+                    .build();
+        }
+        if (Boolean.TRUE.equals(user.getLocked())) {
+            log.info("Acceso de usuario bloqueado por administrador: {}", LogMask.doc(user.getDocumentNumber()));
+            return LoginResponse.builder()
+                    .match(false)
+                    .detail("El usuario se encuentra bloqueado. Contacte al administrador")
+                    .build();
+        }
+        return null;
+    }
+
+    /**
+     * Construye la respuesta de login exitoso con un JWT recién emitido.
+     */
+    private LoginResponse buildSuccessLogin(User user) {
+        String roleCode = user.getRole().getRoleCode();
+        String token = jwtService.generateToken(user.getDocumentNumber(), roleCode);
+
+        return LoginResponse.builder()
+                .match(true)
+                .isNewUser(false)
+                .detail("Login correcto")
+                .token(token)
+                .tokenType("Bearer")
+                .expiresIn(jwtService.getExpirationSeconds())
+                .documentNumber(user.getDocumentNumber())
+                .name(user.getName())
+                .roleCode(roleCode)
+                .build();
     }
 
     /**

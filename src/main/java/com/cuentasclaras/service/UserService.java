@@ -1,5 +1,7 @@
 package com.cuentasclaras.service;
 
+import com.cuentasclaras.model.dto.GoogleLoginDto;
+import com.cuentasclaras.model.dto.GoogleRegisterDto;
 import com.cuentasclaras.model.dto.LoginDto;
 import com.cuentasclaras.model.dto.LoginResponse;
 import com.cuentasclaras.model.entity.User;
@@ -23,5 +25,9 @@ public interface UserService {
     User findByDocumentNumber(String documentNumber);
 
     LoginResponse login(LoginDto loginDto);
+
+    LoginResponse loginWithGoogle(GoogleLoginDto googleLoginDto);
+
+    LoginResponse registerWithGoogle(GoogleRegisterDto googleRegisterDto);
 
 }

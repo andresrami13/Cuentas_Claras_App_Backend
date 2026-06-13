@@ -1,6 +1,7 @@
 package com.cuentasclaras.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -18,6 +19,15 @@ public class LoginResponse {
             example = "true"
     )
     private Boolean match;
+
+    // Se fuerza el nombre JSON: con un Boolean "isX", Jackson tiende a publicarlo como "newUser".
+    @JsonProperty("isNewUser")
+    @Schema(
+            description = "Solo en login con Google: true cuando el correo aún no está registrado y se " +
+                    "requiere completar el perfil; false cuando la cuenta ya existe y se devuelve token",
+            example = "false"
+    )
+    private Boolean isNewUser;
 
     @Schema(
             description = "Detalle del resultado del inicio de sesión",
@@ -44,4 +54,18 @@ public class LoginResponse {
 
     @Schema(description = "Código del rol del usuario autenticado", example = "USR")
     private String roleCode;
+
+    @Schema(
+            description = "Correo verificado por Google. Solo presente en login con Google cuando la cuenta " +
+                    "aún no existe (registro incompleto)",
+            example = "diego@gmail.com"
+    )
+    private String email;
+
+    @Schema(
+            description = "Apellido extraído del token de Google. Solo presente en login con Google cuando " +
+                    "la cuenta aún no existe (registro incompleto)",
+            example = "Ramírez"
+    )
+    private String lastName;
 }

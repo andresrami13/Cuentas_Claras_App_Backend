@@ -41,10 +41,18 @@ app:
     # CRÍTICA: si se pierde o cambia, los datos cifrados quedan ilegibles. Sin valor
     # se usa una clave de desarrollo insegura (solo para local).
     data-encryption-key: ${DATA_ENCRYPTION_KEY:}
+    google:
+      # OAuth Client ID creado en Google Cloud Console. El backend valida que el "aud"
+      # del ID token coincida con este valor. Es un identificador público (no secreto),
+      # pero el login/registro con Google se rechaza si no está configurado.
+      client-id: ${GOOGLE_CLIENT_ID:}
     rate-limit:
       login:
         max-requests: ${RATE_LIMIT_LOGIN_MAX:5}
         window-seconds: ${RATE_LIMIT_LOGIN_WINDOW:60}
+      google:
+        max-requests: ${RATE_LIMIT_GOOGLE_MAX:10}
+        window-seconds: ${RATE_LIMIT_GOOGLE_WINDOW:60}
       ai-coach:
         max-requests: ${RATE_LIMIT_AI_MAX:15}
         window-seconds: ${RATE_LIMIT_AI_WINDOW:3600}
