@@ -13,4 +13,7 @@ RUN useradd -r -u 1001 appuser
 COPY --from=build /home/gradle/src/build/libs/*-SNAPSHOT.jar /app.jar
 USER appuser
 
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+# Limita el heap al 70% de la RAM del contenedor (se adapta al límite de Railway).
+# Sin esto la JVM reserva hasta el 25% de la RAM del host y no la libera, lo que
+# se ve como "consumo extra" aunque la app esté ociosa.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70.0", "-jar", "/app.jar"]
