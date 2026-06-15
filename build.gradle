@@ -43,7 +43,7 @@ dependencies {
     // Verificación de ID tokens de Google (GoogleIdTokenVerifier) para login/registro con Google
     implementation 'com.google.api-client:google-api-client:2.7.0'
 
-    runtimeOnly 'com.mysql:mysql-connector-j'
+    runtimeOnly 'org.postgresql:postgresql'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
