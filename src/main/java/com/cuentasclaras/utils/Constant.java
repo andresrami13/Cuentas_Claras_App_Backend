@@ -10,4 +10,5 @@ public class Constant {
     public static final String DONT_EXIST_USER_WITH_DOCUMENT_NUMBER = "No existe el usuario con número de documento: ";
     public static final String DONT_EXIST_FINANCIAL_GOAL_WITH_ID = "No existe la meta financiera con id: ";
     public static final String DONT_EXIST_AI_COACH_REQUEST_WITH_ID = "No existe la solicitud al coach IA con id: ";
+    public static final String DONT_EXIST_ACCOUNT_WITH_ID = "No existe la cuenta con id: ";
 }

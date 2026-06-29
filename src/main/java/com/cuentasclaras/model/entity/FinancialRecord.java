@@ -37,6 +37,10 @@ public class FinancialRecord {
     @JoinColumn(name = "budget_category_id")
     private BudgetCategory budgetCategory;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    private Account account;
+
     @Convert(converter = StringCryptoConverter.class)
     @Column(name = "description", length = 1024)
     private String description;

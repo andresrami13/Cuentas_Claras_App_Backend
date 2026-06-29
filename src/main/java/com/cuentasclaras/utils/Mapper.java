@@ -127,11 +127,13 @@ public class Mapper {
                 .userDocumentNumber(financialRecord.getUser().getDocumentNumber())
                 .recordType(financialRecord.getRecordType())
                 .budgetCategoryId(financialRecord.getBudgetCategory() != null ? financialRecord.getBudgetCategory().getId() : null)
+                .accountId(financialRecord.getAccount() != null ? financialRecord.getAccount().getAccountId() : null)
                 .description(financialRecord.getDescription())
                 .amount(financialRecord.getAmount())
                 .recordDate(financialRecord.getRecordDate())
                 .recurring(financialRecord.getRecurring())
                 .periodicity(financialRecord.getPeriodicity())
+                .createdAt(financialRecord.getCreatedAt())
                 .build();
     }
 
@@ -148,16 +150,58 @@ public class Mapper {
                 ? BudgetCategory.builder().id(financialRecordDto.getBudgetCategoryId()).build()
                 : null;
 
+        Account account = financialRecordDto.getAccountId() != null
+                ? Account.builder().accountId(financialRecordDto.getAccountId()).build()
+                : null;
+
         return FinancialRecord.builder()
                 .financialRecordId(financialRecordDto.getFinancialRecordId())
                 .user(user)
                 .recordType(financialRecordDto.getRecordType())
                 .budgetCategory(budgetCategory)
+                .account(account)
                 .description(financialRecordDto.getDescription())
                 .amount(financialRecordDto.getAmount())
                 .recordDate(financialRecordDto.getRecordDate())
                 .recurring(financialRecordDto.getRecurring())
                 .periodicity(financialRecordDto.getPeriodicity())
+                .build();
+    }
+
+    //Accounts Adapters
+    public AccountDto toAccountDto(Account account) {
+        return AccountDto.builder()
+                .accountId(account.getAccountId())
+                .userDocumentNumber(account.getUser().getDocumentNumber())
+                .name(account.getName())
+                .type(account.getType())
+                .provider(account.getProvider())
+                .initialBalance(account.getInitialBalance())
+                .color(account.getColor())
+                .icon(account.getIcon())
+                .archived(account.getArchived())
+                .build();
+    }
+
+    public List<AccountDto> toAccountsDto(List<Account> accounts) {
+        return accounts.stream().map(this::toAccountDto).toList();
+    }
+
+    public Account toAccount(AccountDto accountDto) {
+        User user = User.builder()
+                .documentNumber(accountDto.getUserDocumentNumber())
+                .build();
+
+        return Account.builder()
+                .accountId(accountDto.getAccountId())
+                .user(user)
+                .name(accountDto.getName())
+                .type(accountDto.getType())
+                .provider(accountDto.getProvider())
+                .initialBalance(accountDto.getInitialBalance())
+                .color(accountDto.getColor())
+                .icon(accountDto.getIcon())
+                .archived(accountDto.getArchived())
                 .build();
     }
 

@@ -2,10 +2,12 @@ package com.cuentasclaras.service.implementation;
 
 import com.cuentasclaras.exception.BusinessException;
 import com.cuentasclaras.exception.SystemException;
+import com.cuentasclaras.model.entity.Account;
 import com.cuentasclaras.model.entity.BudgetCategory;
 import com.cuentasclaras.model.entity.FinancialRecord;
 import com.cuentasclaras.model.entity.User;
 import com.cuentasclaras.model.enums.FinancialRecordType;
+import com.cuentasclaras.repository.AccountRepository;
 import com.cuentasclaras.repository.BudgetCategoryRepository;
 import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
@@ -30,6 +32,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     private final FinancialRecordRepository financialRecordRepository;
     private final UserRepository userRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
+    private final AccountRepository accountRepository;
     private final SecurityUtils securityUtils;
 
     @Override
@@ -54,6 +57,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
                         .orElseThrow(() -> new BusinessException("No existe la categoría de presupuesto con id: " + financialRecord.getBudgetCategory().getId()));
                 financialRecord.setBudgetCategory(category);
             }
+
+            financialRecord.setAccount(this.resolveAccount(financialRecord.getAccount(), userDocumentNumber));
 
             financialRecord.setUser(user);
             financialRecord.setCreatedAt(new Date());
@@ -94,6 +99,9 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         try {
             existingFinancialRecord.setRecordType(financialRecord.getRecordType());
             existingFinancialRecord.setBudgetCategory(financialRecord.getBudgetCategory());
+            existingFinancialRecord.setAccount(this.resolveAccount(
+                    financialRecord.getAccount(),
+                    existingFinancialRecord.getUser().getDocumentNumber()));
             existingFinancialRecord.setDescription(financialRecord.getDescription());
             existingFinancialRecord.setAmount(financialRecord.getAmount());
             existingFinancialRecord.setRecordDate(financialRecord.getRecordDate());
@@ -226,8 +234,13 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         if (financialRecord.getRecordType() == null)
             throw new BusinessException("El tipo de movimiento financiero es obligatorio");
 
-        if (FinancialRecordType.EXPENSE.equals(financialRecord.getRecordType()) && financialRecord.getBudgetCategory() == null)
-            throw new BusinessException("La categoría de presupuesto es obligatoria para movimientos de egreso");
+        // La categoría ya no es obligatoria en egresos: un movimiento puede ir contra
+        // una cuenta sin categoría. Sí exigimos que tenga al menos una de las dos,
+        // para que ningún movimiento quede totalmente sin clasificar.
+        if (FinancialRecordType.EXPENSE.equals(financialRecord.getRecordType())
+                && financialRecord.getBudgetCategory() == null
+                && financialRecord.getAccount() == null)
+            throw new BusinessException("Un egreso debe tener al menos una categoría de presupuesto o una cuenta");
 
         if (financialRecord.getAmount() == null)
             throw new BusinessException("El valor del movimiento financiero es obligatorio");
@@ -246,5 +259,20 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
         if (Boolean.FALSE.equals(financialRecord.getRecurring()))
             financialRecord.setPeriodicity(null);
+    }
+
+    // Resuelve la cuenta enviada (solo trae el id) a la entidad gestionada,
+    // validando que exista y pertenezca al mismo usuario del movimiento.
+    private Account resolveAccount(Account account, String userDocumentNumber) {
+        if (account == null || account.getAccountId() == null)
+            return null;
+
+        Account managed = accountRepository.findById(account.getAccountId())
+                .orElseThrow(() -> new BusinessException(Constant.DONT_EXIST_ACCOUNT_WITH_ID + account.getAccountId()));
+
+        if (!managed.getUser().getDocumentNumber().equals(userDocumentNumber))
+            throw new BusinessException("La cuenta no pertenece al usuario del movimiento");
+
+        return managed;
     }
 }

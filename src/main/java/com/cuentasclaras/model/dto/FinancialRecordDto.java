@@ -10,6 +10,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Date;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
@@ -32,8 +33,11 @@ public class FinancialRecordDto {
     )
     private FinancialRecordType recordType;
 
-    @Schema(description = "Identificador de la categoría de presupuesto. Obligatorio para egresos, opcional para ingresos.", example = "3")
+    @Schema(description = "Identificador de la categoría de presupuesto. Opcional: un egreso puede ir contra una cuenta sin categoría.", example = "3")
     private Long budgetCategoryId;
+
+    @Schema(description = "Identificador de la cuenta de dinero (banco, billetera, efectivo) a la que pertenece el movimiento. Opcional.", example = "2")
+    private Long accountId;
 
     @Size(max = 250, message = "La descripción no puede superar 250 caracteres")
     @Schema(description = "Descripción del movimiento financiero", example = "Salario mensual empresa ABC")
@@ -59,4 +63,12 @@ public class FinancialRecordDto {
             example = "MONTHLY"
     )
     private Periodicity periodicity;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @Schema(
+            description = "Fecha y hora de creación del movimiento (solo lectura). Permite ordenar por hora.",
+            example = "2026-05-23T14:35:10",
+            type = "string"
+    )
+    private Date createdAt;
 }
