@@ -82,6 +82,56 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
     }
 
     @Override
+    public BudgetCycle updateBudgetCycle(Long cycleId, BudgetCycle budgetCycle) {
+        log.info("Inicio de validaciones para actualizar ciclo de presupuesto: {}", cycleId);
+
+        if (cycleId == null)
+            throw new BusinessException("El identificador del ciclo es obligatorio");
+
+        if (budgetCycle.getPaymentDay() != null
+                && (budgetCycle.getPaymentDay() < 1 || budgetCycle.getPaymentDay() > 31))
+            throw new BusinessException("El día de pago debe estar entre 1 y 31");
+
+        if (budgetCycle.getPeriodicity() != null && !isSupportedPeriodicity(budgetCycle.getPeriodicity()))
+            throw new BusinessException("La periodicidad debe ser WEEKLY, BIWEEKLY o MONTHLY");
+
+        try {
+            BudgetCycle existing = budgetCycleRepository.findById(cycleId)
+                    .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            securityUtils.validateOwnership(existing.getUser().getDocumentNumber(),
+                    "No existe el ciclo con id: " + cycleId);
+
+            if (!BudgetCycleStatus.ACTIVE.equals(existing.getStatus()))
+                throw new BusinessException("Solo se puede modificar un ciclo activo");
+
+            if (budgetCycle.getPaymentDay() != null)
+                existing.setPaymentDay(budgetCycle.getPaymentDay());
+
+            if (budgetCycle.getPeriodicity() != null) {
+                existing.setPeriodicity(budgetCycle.getPeriodicity());
+                existing.setEndDate(calculateEndDate(existing.getStartDate(), budgetCycle.getPeriodicity()));
+            }
+
+            existing.setUpdatedAt(new Date());
+
+            log.info("Actualizando ciclo de presupuesto: {}", cycleId);
+            BudgetCycle saved = budgetCycleRepository.saveAndFlush(existing);
+
+            if (saved.getCategories() != null)
+                saved.getCategories().forEach(c -> c.setSpentAmount(calculateSpentAmount(c.getId())));
+
+            return saved;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar actualizar ciclo de presupuesto: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar actualizar ciclo de presupuesto");
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public BudgetCycle getActiveCycle(String userDocumentNumber) {
         log.info("Consultando ciclo activo del usuario: {}", userDocumentNumber);

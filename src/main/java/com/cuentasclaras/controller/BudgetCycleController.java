@@ -37,6 +37,21 @@ public class BudgetCycleController {
                 .body(ApiResponse.of(HttpStatus.CREATED.value(), "Ciclo de presupuesto creado exitosamente", response));
     }
 
+    @PutMapping("/{cycleId}")
+    @Operation(summary = "Actualizar ciclo de presupuesto", description = "Actualiza el día de pago y/o la periodicidad de un ciclo de presupuesto activo. Al cambiar la periodicidad se recalcula la fecha de fin.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Ciclo actualizado exitosamente")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error de validación de negocio")
+    public ResponseEntity<ApiResponse<BudgetCycleDto>> updateBudgetCycle(
+            @Parameter(description = "Identificador del ciclo", example = "1")
+            @PathVariable Long cycleId,
+            @RequestBody BudgetCycleDto budgetCycleDto) {
+
+        BudgetCycleDto response = mapper.toBudgetCycleDto(
+                budgetCycleService.updateBudgetCycle(cycleId, mapper.toBudgetCycle(budgetCycleDto))
+        );
+        return ResponseEntity.ok(ApiResponse.of(HttpStatus.OK.value(), "Ciclo de presupuesto actualizado exitosamente", response));
+    }
+
     @GetMapping("/users/{documentNumber}/active")
     @Operation(summary = "Obtener ciclo activo del usuario", description = "Retorna el ciclo de presupuesto activo con sus categorías, montos asignados, gastados y disponibles.")
     public ResponseEntity<ApiResponse<BudgetCycleDto>> getActiveCycle(
