@@ -6,6 +6,7 @@ import com.cuentasclaras.model.entity.BudgetCycle;
 public interface BudgetCycleService {
     BudgetCycle createBudgetCycle(BudgetCycle budgetCycle, String userDocumentNumber);
     BudgetCycle updateBudgetCycle(Long cycleId, BudgetCycle budgetCycle);
+    BudgetCycle closeBudgetCycle(Long cycleId);
     BudgetCycle getActiveCycle(String userDocumentNumber);
     BudgetCategory addCategory(Long cycleId, BudgetCategory category);
     BudgetCategory updateCategory(Long cycleId, Long categoryId, BudgetCategory category);

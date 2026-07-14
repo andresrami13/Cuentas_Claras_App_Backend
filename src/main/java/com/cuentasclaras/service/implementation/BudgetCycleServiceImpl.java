@@ -132,6 +132,42 @@ public class BudgetCycleServiceImpl implements BudgetCycleService {
     }
 
     @Override
+    public BudgetCycle closeBudgetCycle(Long cycleId) {
+        log.info("Inicio de validaciones para cerrar ciclo de presupuesto: {}", cycleId);
+
+        if (cycleId == null)
+            throw new BusinessException("El identificador del ciclo es obligatorio");
+
+        try {
+            BudgetCycle existing = budgetCycleRepository.findById(cycleId)
+                    .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+            securityUtils.validateOwnership(existing.getUser().getDocumentNumber(),
+                    "No existe el ciclo con id: " + cycleId);
+
+            if (!BudgetCycleStatus.ACTIVE.equals(existing.getStatus()))
+                throw new BusinessException("El ciclo ya se encuentra cerrado");
+
+            existing.setStatus(BudgetCycleStatus.CLOSED);
+            existing.setUpdatedAt(new Date());
+
+            log.info("Cerrando ciclo de presupuesto: {}", cycleId);
+            BudgetCycle saved = budgetCycleRepository.saveAndFlush(existing);
+
+            if (saved.getCategories() != null)
+                saved.getCategories().forEach(c -> c.setSpentAmount(calculateSpentAmount(c.getId())));
+
+            return saved;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al intentar cerrar ciclo de presupuesto: {}", e.getMessage(), e);
+            throw new SystemException("Error al intentar cerrar ciclo de presupuesto");
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public BudgetCycle getActiveCycle(String userDocumentNumber) {
         log.info("Consultando ciclo activo del usuario: {}", userDocumentNumber);

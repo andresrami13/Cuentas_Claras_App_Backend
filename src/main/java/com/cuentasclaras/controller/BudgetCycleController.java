@@ -52,6 +52,18 @@ public class BudgetCycleController {
         return ResponseEntity.ok(ApiResponse.of(HttpStatus.OK.value(), "Ciclo de presupuesto actualizado exitosamente", response));
     }
 
+    @PatchMapping("/{cycleId}/close")
+    @Operation(summary = "Cerrar (inactivar) ciclo de presupuesto", description = "Cambia el estado de un ciclo activo a CLOSED. Un ciclo cerrado ya no admite modificaciones de categorías.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Ciclo cerrado exitosamente")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "El ciclo ya se encuentra cerrado o no existe")
+    public ResponseEntity<ApiResponse<BudgetCycleDto>> closeBudgetCycle(
+            @Parameter(description = "Identificador del ciclo", example = "1")
+            @PathVariable Long cycleId) {
+
+        BudgetCycleDto response = mapper.toBudgetCycleDto(budgetCycleService.closeBudgetCycle(cycleId));
+        return ResponseEntity.ok(ApiResponse.of(HttpStatus.OK.value(), "Ciclo de presupuesto cerrado exitosamente", response));
+    }
+
     @GetMapping("/users/{documentNumber}/active")
     @Operation(summary = "Obtener ciclo activo del usuario", description = "Retorna el ciclo de presupuesto activo con sus categorías, montos asignados, gastados y disponibles.")
     public ResponseEntity<ApiResponse<BudgetCycleDto>> getActiveCycle(
