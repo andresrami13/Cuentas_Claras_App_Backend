@@ -24,4 +24,6 @@ public interface FinancialRecordRepository extends JpaRepository<FinancialRecord
             Long budgetCategoryId,
             FinancialRecordType recordType
     );
+
+    List<FinancialRecord> findByBudgetCycle_Id(Long budgetCycleId);
 }

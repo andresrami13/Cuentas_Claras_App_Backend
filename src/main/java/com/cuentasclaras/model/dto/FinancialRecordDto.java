@@ -39,6 +39,9 @@ public class FinancialRecordDto {
     @Schema(description = "Identificador de la cuenta de dinero (banco, billetera, efectivo) a la que pertenece el movimiento. Opcional.", example = "2")
     private Long accountId;
 
+    @Schema(description = "Identificador del ciclo de presupuesto al que quedó ligado el movimiento (solo lectura). Se estampa con el ciclo activo al crear el ingreso/egreso.", example = "5")
+    private Long budgetCycleId;
+
     @Size(max = 250, message = "La descripción no puede superar 250 caracteres")
     @Schema(description = "Descripción del movimiento financiero", example = "Salario mensual empresa ABC")
     private String description;

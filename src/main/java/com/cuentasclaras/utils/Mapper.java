@@ -128,6 +128,7 @@ public class Mapper {
                 .recordType(financialRecord.getRecordType())
                 .budgetCategoryId(financialRecord.getBudgetCategory() != null ? financialRecord.getBudgetCategory().getId() : null)
                 .accountId(financialRecord.getAccount() != null ? financialRecord.getAccount().getAccountId() : null)
+                .budgetCycleId(financialRecord.getBudgetCycle() != null ? financialRecord.getBudgetCycle().getId() : null)
                 .description(financialRecord.getDescription())
                 .amount(financialRecord.getAmount())
                 .recordDate(financialRecord.getRecordDate())
@@ -321,6 +322,7 @@ public class Mapper {
         return BudgetCycle.builder()
                 .paymentDay(dto.getPaymentDay())
                 .periodicity(dto.getPeriodicity())
+                .status(dto.getStatus())
                 .build();
     }
 

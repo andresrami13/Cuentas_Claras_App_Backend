@@ -4,11 +4,14 @@ import com.cuentasclaras.exception.BusinessException;
 import com.cuentasclaras.exception.SystemException;
 import com.cuentasclaras.model.entity.Account;
 import com.cuentasclaras.model.entity.BudgetCategory;
+import com.cuentasclaras.model.entity.BudgetCycle;
 import com.cuentasclaras.model.entity.FinancialRecord;
 import com.cuentasclaras.model.entity.User;
+import com.cuentasclaras.model.enums.BudgetCycleStatus;
 import com.cuentasclaras.model.enums.FinancialRecordType;
 import com.cuentasclaras.repository.AccountRepository;
 import com.cuentasclaras.repository.BudgetCategoryRepository;
+import com.cuentasclaras.repository.BudgetCycleRepository;
 import com.cuentasclaras.repository.FinancialRecordRepository;
 import com.cuentasclaras.repository.UserRepository;
 import com.cuentasclaras.security.SecurityUtils;
@@ -33,6 +36,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     private final UserRepository userRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
     private final AccountRepository accountRepository;
+    private final BudgetCycleRepository budgetCycleRepository;
     private final SecurityUtils securityUtils;
 
     @Override
@@ -59,6 +63,14 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
             }
 
             financialRecord.setAccount(this.resolveAccount(financialRecord.getAccount(), userDocumentNumber));
+
+            // Se liga el movimiento al ciclo ACTIVO del usuario (si existe). Así los ingresos
+            // —que no llevan categoría— también quedan ligados al ciclo y las vistas por ciclo
+            // arrancan en 0 al iniciar uno nuevo. Sin ciclo activo, queda sin ciclo (histórico).
+            financialRecord.setBudgetCycle(
+                    budgetCycleRepository
+                            .findByUser_DocumentNumberAndStatus(userDocumentNumber, BudgetCycleStatus.ACTIVE)
+                            .orElse(null));
 
             financialRecord.setUser(user);
             financialRecord.setCreatedAt(new Date());
@@ -224,6 +236,28 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         } catch (Exception e) {
             log.error("Error al intentar consultar movimientos financieros recurrentes del usuario", e);
             throw new SystemException("Error al intentar consultar movimientos financieros recurrentes del usuario");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FinancialRecord> getFinancialRecordsByCycle(Long cycleId) {
+        if (cycleId == null)
+            throw new BusinessException("El identificador del ciclo es obligatorio");
+
+        BudgetCycle cycle = budgetCycleRepository.findById(cycleId)
+                .orElseThrow(() -> new BusinessException("No existe el ciclo con id: " + cycleId));
+
+        securityUtils.validateOwnership(cycle.getUser().getDocumentNumber(),
+                "No existe el ciclo con id: " + cycleId);
+
+        try {
+            log.info("Consultando movimientos financieros del ciclo: {}", cycleId);
+            return financialRecordRepository.findByBudgetCycle_Id(cycleId);
+
+        } catch (Exception e) {
+            log.error("Error al intentar consultar movimientos financieros del ciclo", e);
+            throw new SystemException("Error al intentar consultar movimientos financieros del ciclo");
         }
     }
 

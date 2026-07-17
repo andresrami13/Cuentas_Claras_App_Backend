@@ -126,6 +126,19 @@ public class FinancialRecordController {
                 .body(ApiResponse.of(HttpStatus.OK.value(), "Movimientos financieros filtrados obtenidos exitosamente", response));
     }
 
+    @GetMapping("/cycles/{cycleId}")
+    @Operation(summary = "Consultar movimientos financieros por ciclo", description = "Consulta los ingresos y egresos ligados a un ciclo de presupuesto. Útil para que Ingresos/Egresos/Balance arranquen en 0 al iniciar un ciclo nuevo.")
+    public ResponseEntity<ApiResponse<List<FinancialRecordDto>>> getFinancialRecordsByCycle(
+            @Parameter(description = "Identificador del ciclo de presupuesto", example = "5")
+            @PathVariable Long cycleId) {
+
+        List<FinancialRecordDto> response = mapper.toFinancialRecordsDto(
+                financialRecordService.getFinancialRecordsByCycle(cycleId)
+        );
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.of(HttpStatus.OK.value(), "Movimientos financieros del ciclo obtenidos exitosamente", response));
+    }
+
     @GetMapping("/users/{userDocumentNumber}/recurring")
     @Operation(summary = "Consultar movimientos financieros recurrentes por usuario", description = "Consulta los movimientos recurrentes de un usuario, por ejemplo salario, arriendo, servicios, suscripciones o pagos periódicos.")
     public ResponseEntity<ApiResponse<List<FinancialRecordDto>>> getRecurringFinancialRecordsByUser(

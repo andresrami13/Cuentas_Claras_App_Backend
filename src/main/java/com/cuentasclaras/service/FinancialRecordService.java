@@ -20,4 +20,6 @@ public interface FinancialRecordService {
     List<FinancialRecord> getFinancialRecordsByUserAndType(String userDocumentNumber, FinancialRecordType recordType);
 
     List<FinancialRecord> getRecurringFinancialRecordsByUser(String userDocumentNumber);
+
+    List<FinancialRecord> getFinancialRecordsByCycle(Long cycleId);
 }

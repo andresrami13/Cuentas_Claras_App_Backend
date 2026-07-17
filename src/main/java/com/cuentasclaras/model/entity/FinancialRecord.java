@@ -41,6 +41,13 @@ public class FinancialRecord {
     @JoinColumn(name = "account_id")
     private Account account;
 
+    // Ciclo de presupuesto ACTIVO al momento de crear el movimiento. Se estampa
+    // automáticamente en createFinancialRecord; permite mostrar Ingresos/Egresos/Balance
+    // por ciclo. Nullable: movimientos históricos (o creados sin ciclo activo) quedan sin ciclo.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "budget_cycle_id")
+    private BudgetCycle budgetCycle;
+
     @Convert(converter = StringCryptoConverter.class)
     @Column(name = "description", length = 1024)
     private String description;

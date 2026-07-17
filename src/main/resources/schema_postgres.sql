@@ -143,6 +143,7 @@ CREATE TABLE financial_records (
     record_type          VARCHAR(20)   NOT NULL,
     budget_category_id   BIGINT,
     account_id           BIGINT,
+    budget_cycle_id      BIGINT,
     description          VARCHAR(1024),
     amount               VARCHAR(255)  NOT NULL,
     record_date          DATE          NOT NULL,
@@ -153,8 +154,13 @@ CREATE TABLE financial_records (
     CONSTRAINT pk_financial_records PRIMARY KEY (financial_record_id),
     CONSTRAINT fk_fr_user FOREIGN KEY (user_document_number) REFERENCES users (document_number),
     CONSTRAINT fk_fr_category FOREIGN KEY (budget_category_id) REFERENCES budget_categories (id),
-    CONSTRAINT fk_fr_account FOREIGN KEY (account_id) REFERENCES financial_accounts (account_id)
+    CONSTRAINT fk_fr_account FOREIGN KEY (account_id) REFERENCES financial_accounts (account_id),
+    CONSTRAINT fk_fr_cycle FOREIGN KEY (budget_cycle_id) REFERENCES budget_cycles (id)
 );
+
+-- Acelera GET /financial-records/cycles/{cycleId}. budget_cycle_id se estampa con
+-- el ciclo ACTIVO del usuario al crear el movimiento; los históricos quedan NULL.
+CREATE INDEX IF NOT EXISTS ix_fr_budget_cycle ON financial_records (budget_cycle_id);
 
 -- 10) debts (creditor, description, initial_amount, pending_amount cifrados)
 CREATE TABLE debts (
